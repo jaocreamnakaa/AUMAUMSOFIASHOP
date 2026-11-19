@@ -304,7 +304,7 @@
                 </div>
 
                 <div id="admin-access-denied-box" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-3.5 text-center space-y-2">
-                    <p class="text-xs font-semibold text-rose-700">บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานหลังบ้านแอดมิน</p>
+                    <p id="admin-denied-message" class="text-xs font-semibold text-rose-700">บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานหลังบ้านแอดมิน</p>
                     <button type="button" onclick="handleAdminLogout()" class="px-4 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-medium transition-colors">
                         ออกจากระบบบัญชีนี้
                     </button>
@@ -1295,6 +1295,7 @@
         // Publishable / anon key สำหรับใช้งานฝั่ง Client คู่กับ RLS
         const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeHdvaXpraWRhdmRmaW1oeHhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNjI5OTcsImV4cCI6MjExMDYzODk5N30.I5EQwrHxrV0X_MILMvosZ2xel_2XOUdSjax3ZGDqfVY';
         const STORAGE_BUCKET = 'store-media';
+        const SUPABASE_REQUEST_TIMEOUT_MS = 12000;
         const MAX_IMAGE_FILE_BYTES = 8 * 1024 * 1024;
         const MAX_AUDIO_FILE_BYTES = 15 * 1024 * 1024;
         const ALLOWED_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -1311,13 +1312,62 @@
             }
             try {
                 if (window.supabase && typeof window.supabase.createClient === 'function') {
-                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+                        auth: {
+                            persistSession: true,
+                            autoRefreshToken: true,
+                            detectSessionInUrl: false
+                        }
+                    });
                     return (supabaseClient && supabaseClient.auth) ? supabaseClient : null;
                 }
             } catch (err) {
                 console.error('Supabase initialization error:', err);
             }
             return null;
+        }
+
+        async function withTimeout(promiseOrBuilder, timeoutMs = SUPABASE_REQUEST_TIMEOUT_MS, label = 'request') {
+            let timerId = null;
+            const timeoutPromise = new Promise((_, reject) => {
+                timerId = setTimeout(() => {
+                    const timeoutErr = new Error(`${label} timed out after ${timeoutMs}ms`);
+                    timeoutErr.code = 'TIMEOUT';
+                    reject(timeoutErr);
+                }, timeoutMs);
+            });
+
+            try {
+                const targetPromise = typeof promiseOrBuilder === 'function' ? promiseOrBuilder() : promiseOrBuilder;
+                return await Promise.race([targetPromise, timeoutPromise]);
+            } finally {
+                if (timerId) clearTimeout(timerId);
+            }
+        }
+
+        function isNetworkOrProjectPausedError(err) {
+            if (!err) return false;
+            const msg = String(err.message || err.details || err.hint || err).toLowerCase();
+            const code = String(err.code || '').toLowerCase();
+            return (
+                code === 'timeout' ||
+                msg.includes('failed to fetch') ||
+                msg.includes('networkerror') ||
+                msg.includes('network request failed') ||
+                msg.includes('load failed') ||
+                msg.includes('timed out') ||
+                msg.includes('err_name_not_resolved') ||
+                msg.includes('err_connection') ||
+                msg.includes('paused') ||
+                msg.includes('project is not active')
+            );
+        }
+
+        function getFriendlyErrorMessage(err, fallbackText) {
+            if (isNetworkOrProjectPausedError(err)) {
+                return 'เชื่อมต่อ Supabase ไม่ได้ในขณะนี้ (อาจเพิ่งกด Restore/Resume ระบบ หรืออินเทอร์เน็ตช้า) กรุณารอสักครู่แล้วกดลองใหม่อีกครั้ง';
+            }
+            return fallbackText;
         }
 
         function isSafeMediaUrlOrData(url) {
@@ -1337,12 +1387,16 @@
             const safeExt = String(ext || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'jpg';
             const filePath = `${safeFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
 
-            const { error: uploadError } = await client.storage
-                .from(STORAGE_BUCKET)
-                .upload(filePath, blobOrFile, {
-                    contentType: contentType || blobOrFile.type || 'application/octet-stream',
-                    upsert: false
-                });
+            const { error: uploadError } = await withTimeout(
+                () => client.storage
+                    .from(STORAGE_BUCKET)
+                    .upload(filePath, blobOrFile, {
+                        contentType: contentType || blobOrFile.type || 'application/octet-stream',
+                        upsert: false
+                    }),
+                20000,
+                'storage.upload'
+            );
 
             if (uploadError) {
                 throw uploadError;
@@ -1991,7 +2045,6 @@
 
                 let storedImageUrl = croppedDataUrl;
                 if (ctxType === 'customer_review') {
-                    // ผู้เยี่ยมชมทั่วไปอัปโหลดได้เฉพาะผ่านตาราง reviews โดยใช้ URL สาธารณะหรือ DataURL ที่ปลอดภัย
                     storedImageUrl = croppedDataUrl;
                 } else if (appState.isAdminVerified) {
                     storedImageUrl = await uploadCroppedDataUrlToStorage(croppedDataUrl, targetFolder);
@@ -2237,16 +2290,37 @@
             }
             try {
                 const payload = buildStoreSettingsPayload();
-                const { error } = await client
-                    .from('store_settings')
-                    .upsert(payload, { onConflict: 'id' });
+                const { error } = await withTimeout(
+                    () => client.from('store_settings').upsert(payload, { onConflict: 'id' }),
+                    SUPABASE_REQUEST_TIMEOUT_MS,
+                    'saveStoreSettings'
+                );
                 if (error) throw error;
                 return true;
             } catch (err) {
                 console.error('saveStoreSettingsToSupabase error:', err);
-                showToast('เกิดข้อผิดพลาดในการบันทึกการตั้งค่าร้าน กรุณาลองใหม่อีกครั้ง', 'error');
+                showToast(getFriendlyErrorMessage(err, 'เกิดข้อผิดพลาดในการบันทึกการตั้งค่าร้าน กรุณาลองใหม่อีกครั้ง'), 'error');
                 return false;
             }
+        }
+
+        async function queryTableWithRetry(queryFn, label, retries = 1) {
+            let lastErr = null;
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const res = await withTimeout(queryFn, SUPABASE_REQUEST_TIMEOUT_MS, label);
+                    if (res && res.error) {
+                        throw res.error;
+                    }
+                    return res;
+                } catch (err) {
+                    lastErr = err;
+                    if (attempt < retries) {
+                        await new Promise(resolve => setTimeout(resolve, 600));
+                    }
+                }
+            }
+            throw lastErr;
         }
 
         async function loadAllStoreDataFromSupabase() {
@@ -2272,22 +2346,14 @@
                     reviewsRes,
                     contactsRes
                 ] = await Promise.all([
-                    client.from('store_settings').select('*').eq('id', 1).maybeSingle(),
-                    client.from('custom_blocks').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-                    client.from('highlights').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-                    client.from('categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-                    client.from('accounts').select('*').order('created_at', { ascending: false }),
-                    client.from('reviews').select('*').order('created_at', { ascending: false }),
-                    client.from('contacts').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
+                    queryTableWithRetry(() => client.from('store_settings').select('*').eq('id', 1).maybeSingle(), 'store_settings', 1),
+                    queryTableWithRetry(() => client.from('custom_blocks').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }), 'custom_blocks', 1),
+                    queryTableWithRetry(() => client.from('highlights').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }), 'highlights', 1),
+                    queryTableWithRetry(() => client.from('categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }), 'categories', 1),
+                    queryTableWithRetry(() => client.from('accounts').select('*').order('created_at', { ascending: false }), 'accounts', 1),
+                    queryTableWithRetry(() => client.from('reviews').select('*').order('created_at', { ascending: false }), 'reviews', 1),
+                    queryTableWithRetry(() => client.from('contacts').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }), 'contacts', 1)
                 ]);
-
-                if (settingsRes.error) throw settingsRes.error;
-                if (customBlocksRes.error) throw customBlocksRes.error;
-                if (highlightsRes.error) throw highlightsRes.error;
-                if (categoriesRes.error) throw categoriesRes.error;
-                if (accountsRes.error) throw accountsRes.error;
-                if (reviewsRes.error) throw reviewsRes.error;
-                if (contactsRes.error) throw contactsRes.error;
 
                 mapStoreSettingsRow(settingsRes.data || {});
 
@@ -2364,7 +2430,7 @@
             } catch (err) {
                 console.error('Failed loading data from Supabase:', err);
                 appState.isLoadingStore = false;
-                appState.storeError = 'ไม่สามารถโหลดข้อมูลร้านค้าได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง';
+                appState.storeError = getFriendlyErrorMessage(err, 'ไม่สามารถโหลดข้อมูลร้านค้าได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
             }
 
             renderAllStorefrontViews();
@@ -2437,10 +2503,23 @@
             updateAdminAuthView();
 
             try {
-                const { data: sessionData, error: sessionError } = await client.auth.getSession();
+                const { data: sessionData, error: sessionError } = await withTimeout(
+                    () => client.auth.getSession(),
+                    SUPABASE_REQUEST_TIMEOUT_MS,
+                    'auth.getSession'
+                );
                 if (sessionError) throw sessionError;
 
-                const session = sessionData?.session || null;
+                let session = sessionData?.session || null;
+                if (!session) {
+                    const { data: refreshData } = await withTimeout(
+                        () => client.auth.refreshSession(),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'auth.refreshSession'
+                    ).catch(() => ({ data: null }));
+                    session = refreshData?.session || null;
+                }
+
                 appState.currentUser = session?.user || null;
 
                 if (!session || !session.user) {
@@ -2451,7 +2530,11 @@
                     return false;
                 }
 
-                const { data: isAdminResult, error: rpcError } = await client.rpc('is_admin');
+                const { data: isAdminResult, error: rpcError } = await withTimeout(
+                    () => client.rpc('is_admin'),
+                    SUPABASE_REQUEST_TIMEOUT_MS,
+                    'rpc.is_admin'
+                );
                 if (rpcError) throw rpcError;
 
                 appState.isAdminVerified = isAdminResult === true;
@@ -2461,7 +2544,7 @@
             } catch (err) {
                 console.error('verifyAdminSessionAndRole error:', err);
                 appState.isAdminVerified = false;
-                appState.adminDeniedReason = 'ไม่สามารถตรวจสอบสิทธิ์แอดมินได้ในขณะนี้';
+                appState.adminDeniedReason = getFriendlyErrorMessage(err, 'ไม่สามารถตรวจสอบสิทธิ์แอดมินได้ในขณะนี้');
             } finally {
                 appState.isCheckingAdmin = false;
             }
@@ -2475,6 +2558,7 @@
             const loginGate = document.getElementById('admin-login-gate');
             const dashboard = document.getElementById('admin-dashboard-content');
             const deniedBox = document.getElementById('admin-access-denied-box');
+            const deniedMsg = document.getElementById('admin-denied-message');
 
             if (appState.isCheckingAdmin) {
                 checkingGate.classList.remove('hidden');
@@ -2494,7 +2578,10 @@
             } else {
                 loginGate.classList.remove('hidden');
                 dashboard.classList.add('hidden');
-                if (appState.currentUser && !appState.isAdminVerified) {
+                if ((appState.currentUser && !appState.isAdminVerified) || appState.adminDeniedReason) {
+                    if (deniedMsg) {
+                        deniedMsg.textContent = appState.adminDeniedReason || 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานหลังบ้านแอดมิน';
+                    }
                     deniedBox.classList.remove('hidden');
                 } else {
                     deniedBox.classList.add('hidden');
@@ -2522,10 +2609,14 @@
                 }
 
                 try {
-                    const { error } = await client.auth.signInWithPassword({
-                        email: emailInput,
-                        password: passwordInput
-                    });
+                    const { error } = await withTimeout(
+                        () => client.auth.signInWithPassword({
+                            email: emailInput,
+                            password: passwordInput
+                        }),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'auth.signInWithPassword'
+                    );
                     if (error) throw error;
 
                     document.getElementById('admin-login-password').value = '';
@@ -2535,11 +2626,11 @@
                         await loadAllStoreDataFromSupabase();
                         showToast('เข้าสู่ระบบหลังบ้านแอดมินเรียบร้อยแล้ว');
                     } else {
-                        showToast('บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานหลังบ้านแอดมิน', 'error');
+                        showToast(appState.adminDeniedReason || 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานหลังบ้านแอดมิน', 'error');
                     }
                 } catch (err) {
                     console.error('Admin login error:', err);
-                    showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือไม่สามารถเข้าสู่ระบบได้', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือไม่สามารถเข้าสู่ระบบได้'), 'error');
                 }
             });
         }
@@ -2550,7 +2641,7 @@
                 try {
                     const client = getSupabaseClient();
                     if (client && client.auth) {
-                        await client.auth.signOut();
+                        await withTimeout(() => client.auth.signOut(), 8000, 'auth.signOut').catch(() => {});
                     }
                 } catch (err) {
                     console.error('Logout error:', err);
@@ -2586,14 +2677,18 @@
                     if (appState.currentUser && newEmail !== appState.currentUser.email) {
                         updatePayload.email = newEmail;
                     }
-                    const { data, error } = await client.auth.updateUser(updatePayload);
+                    const { data, error } = await withTimeout(
+                        () => client.auth.updateUser(updatePayload),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'auth.updateUser'
+                    );
                     if (error) throw error;
                     if (data?.user) appState.currentUser = data.user;
                     document.getElementById('input-admin-password').value = '';
                     showToast('อัปเดตข้อมูลบัญชีแอดมินเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveAdminCredentials error:', err);
-                    showToast('อัปเดตข้อมูลล็อกอินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'อัปเดตข้อมูลล็อกอินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -3839,14 +3934,18 @@
                 }
 
                 try {
-                    const { error } = await client
-                        .from('reviews')
-                        .insert({
-                            author,
-                            rating,
-                            review_text: text,
-                            image_url: isSafeMediaUrlOrData(tempCustomerReviewImg) ? tempCustomerReviewImg : ''
-                        });
+                    const { error } = await withTimeout(
+                        () => client
+                            .from('reviews')
+                            .insert({
+                                author,
+                                rating,
+                                review_text: text,
+                                image_url: isSafeMediaUrlOrData(tempCustomerReviewImg) ? tempCustomerReviewImg : ''
+                            }),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'submitCustomerReview'
+                    );
                     if (error) throw error;
 
                     closeModal('modal-customer-review');
@@ -3854,7 +3953,7 @@
                     showToast(`ส่งรีวิว ${rating} ดาวของคุณเรียบร้อยแล้ว ขอบคุณมากครับ`);
                 } catch (err) {
                     console.error('submitCustomerReviewForm error:', err);
-                    showToast('ส่งรีวิวไม่สำเร็จ กรุณาตรวจสอบข้อมูลและลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'ส่งรีวิวไม่สำเร็จ กรุณาตรวจสอบข้อมูลและลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -4199,7 +4298,7 @@
                 }
             } catch (err) {
                 console.error('Audio upload error:', err);
-                showToast('อัปโหลดไฟล์เพลงไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                showToast(getFriendlyErrorMessage(err, 'อัปโหลดไฟล์เพลงไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
             }
         }
 
@@ -4434,29 +4533,37 @@
 
                 try {
                     if (id) {
-                        const { error } = await client
-                            .from('custom_blocks')
-                            .update({
-                                title,
-                                subtitle,
-                                mode,
-                                content_text: text,
-                                image_url: tempCustomBlockImg || ''
-                            })
-                            .eq('id', id);
+                        const { error } = await withTimeout(
+                            () => client
+                                .from('custom_blocks')
+                                .update({
+                                    title,
+                                    subtitle,
+                                    mode,
+                                    content_text: text,
+                                    image_url: tempCustomBlockImg || ''
+                                })
+                                .eq('id', id),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'updateCustomBlock'
+                        );
                         if (error) throw error;
                         showToast('แก้ไขบล็อคแสดงผลเรียบร้อยแล้ว');
                     } else {
-                        const { error } = await client
-                            .from('custom_blocks')
-                            .insert({
-                                title,
-                                subtitle,
-                                mode,
-                                content_text: text,
-                                image_url: tempCustomBlockImg || '',
-                                sort_order: storeData.customBlocks.length
-                            });
+                        const { error } = await withTimeout(
+                            () => client
+                                .from('custom_blocks')
+                                .insert({
+                                    title,
+                                    subtitle,
+                                    mode,
+                                    content_text: text,
+                                    image_url: tempCustomBlockImg || '',
+                                    sort_order: storeData.customBlocks.length
+                                }),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'insertCustomBlock'
+                        );
                         if (error) throw error;
                         showToast('เพิ่มบล็อคแสดงผลใหม่เรียบร้อยแล้ว');
                     }
@@ -4465,7 +4572,7 @@
                     await loadAllStoreDataFromSupabase();
                 } catch (err) {
                     console.error('saveCustomBlockForm error:', err);
-                    showToast('บันทึกบล็อคไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'บันทึกบล็อคไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -4476,13 +4583,17 @@
                 const client = getSupabaseClient();
                 if (!client) return;
                 try {
-                    const { error } = await client.from('custom_blocks').delete().eq('id', id);
+                    const { error } = await withTimeout(
+                        () => client.from('custom_blocks').delete().eq('id', id),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'deleteCustomBlock'
+                    );
                     if (error) throw error;
                     await loadAllStoreDataFromSupabase();
                     showToast('ลบบล็อคแสดงผลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('deleteCustomBlock error:', err);
-                    showToast('ลบบล็อคไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'ลบบล็อคไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -4653,25 +4764,33 @@
 
                 try {
                     if (id) {
-                        const { error } = await client
-                            .from('highlights')
-                            .update({
-                                title,
-                                cover_image: cover,
-                                gallery_images: finalGallery
-                            })
-                            .eq('id', id);
+                        const { error } = await withTimeout(
+                            () => client
+                                .from('highlights')
+                                .update({
+                                    title,
+                                    cover_image: cover,
+                                    gallery_images: finalGallery
+                                })
+                                .eq('id', id),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'updateHighlight'
+                        );
                         if (error) throw error;
                         showToast('แก้ไขไฮไลท์เรียบร้อยแล้ว');
                     } else {
-                        const { error } = await client
-                            .from('highlights')
-                            .insert({
-                                title,
-                                cover_image: cover,
-                                gallery_images: finalGallery,
-                                sort_order: storeData.highlights.length
-                            });
+                        const { error } = await withTimeout(
+                            () => client
+                                .from('highlights')
+                                .insert({
+                                    title,
+                                    cover_image: cover,
+                                    gallery_images: finalGallery,
+                                    sort_order: storeData.highlights.length
+                                }),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'insertHighlight'
+                        );
                         if (error) throw error;
                         showToast('เพิ่มไฮไลท์ใหม่เรียบร้อยแล้ว');
                     }
@@ -4680,7 +4799,7 @@
                     await loadAllStoreDataFromSupabase();
                 } catch (err) {
                     console.error('saveHighlightForm error:', err);
-                    showToast('บันทึกไฮไลท์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'บันทึกไฮไลท์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -4691,13 +4810,17 @@
                 const client = getSupabaseClient();
                 if (!client) return;
                 try {
-                    const { error } = await client.from('highlights').delete().eq('id', id);
+                    const { error } = await withTimeout(
+                        () => client.from('highlights').delete().eq('id', id),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'deleteHighlight'
+                    );
                     if (error) throw error;
                     await loadAllStoreDataFromSupabase();
                     showToast('ลบไฮไลท์เรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('deleteHighlight error:', err);
-                    showToast('ลบไฮไลท์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'ลบไฮไลท์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -4913,11 +5036,19 @@
 
                 try {
                     if (id) {
-                        const { error } = await client.from('accounts').update(payload).eq('id', id);
+                        const { error } = await withTimeout(
+                            () => client.from('accounts').update(payload).eq('id', id),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'updateAccount'
+                        );
                         if (error) throw error;
                         showToast(`อัปเดตข้อมูลรหัส ${code} เรียบร้อยแล้ว`);
                     } else {
-                        const { error } = await client.from('accounts').insert(payload);
+                        const { error } = await withTimeout(
+                            () => client.from('accounts').insert(payload),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'insertAccount'
+                        );
                         if (error) throw error;
                         showToast(`เพิ่มรหัส ${code} เข้าสู่ระบบเรียบร้อยแล้ว`);
                     }
@@ -4926,7 +5057,7 @@
                     await loadAllStoreDataFromSupabase();
                 } catch (err) {
                     console.error('saveAccountForm error:', err);
-                    showToast('บันทึกข้อมูลรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'บันทึกข้อมูลรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -4938,13 +5069,17 @@
             if (!acc) return;
             const nextStatus = acc.status === 'available' ? 'rented' : 'available';
             try {
-                const { error } = await client.from('accounts').update({ status: nextStatus }).eq('id', accId);
+                const { error } = await withTimeout(
+                    () => client.from('accounts').update({ status: nextStatus }).eq('id', accId),
+                    SUPABASE_REQUEST_TIMEOUT_MS,
+                    'toggleAccountStatus'
+                );
                 if (error) throw error;
                 await loadAllStoreDataFromSupabase();
                 showToast(`เปลี่ยนสถานะรหัส ${acc.code || ''} เป็น "${nextStatus === 'available' ? 'ว่าง' : 'ติดเช่า'}" แล้ว`);
             } catch (err) {
                 console.error('quickToggleAccountStatus error:', err);
-                showToast('เปลี่ยนสถานะรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                showToast(getFriendlyErrorMessage(err, 'เปลี่ยนสถานะรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
             }
         }
 
@@ -4955,13 +5090,17 @@
                 const client = getSupabaseClient();
                 if (!client) return;
                 try {
-                    const { error } = await client.from('accounts').delete().eq('id', accId);
+                    const { error } = await withTimeout(
+                        () => client.from('accounts').delete().eq('id', accId),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'deleteAccount'
+                    );
                     if (error) throw error;
                     await loadAllStoreDataFromSupabase();
                     showToast('ลบข้อมูลรหัสเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('deleteAccount error:', err);
-                    showToast('ลบข้อมูลรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'ลบข้อมูลรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -5075,12 +5214,16 @@
                 }
 
                 try {
-                    const { error } = await client
-                        .from('categories')
-                        .insert({
-                            name,
-                            sort_order: storeData.categoryRecords.length
-                        });
+                    const { error } = await withTimeout(
+                        () => client
+                            .from('categories')
+                            .insert({
+                                name,
+                                sort_order: storeData.categoryRecords.length
+                            }),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'insertCategory'
+                    );
                     if (error) throw error;
 
                     input.value = '';
@@ -5088,7 +5231,7 @@
                     showToast(`เพิ่มประเภท "${name}" เรียบร้อยแล้ว`);
                 } catch (err) {
                     console.error('handleAddCategory error:', err);
-                    showToast('เพิ่มประเภทรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'เพิ่มประเภทรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -5101,10 +5244,18 @@
                 try {
                     const matched = storeData.categoryRecords.find(c => c.name === catName);
                     if (matched && matched.id) {
-                        const { error } = await client.from('categories').delete().eq('id', matched.id);
+                        const { error } = await withTimeout(
+                            () => client.from('categories').delete().eq('id', matched.id),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'deleteCategoryById'
+                        );
                         if (error) throw error;
                     } else {
-                        const { error } = await client.from('categories').delete().eq('name', catName);
+                        const { error } = await withTimeout(
+                            () => client.from('categories').delete().eq('name', catName),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'deleteCategoryByName'
+                        );
                         if (error) throw error;
                     }
                     if (currentCategoryFilter === catName) currentCategoryFilter = 'ทั้งหมด';
@@ -5112,7 +5263,7 @@
                     showToast('ลบประเภทรหัสเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('deleteCategory error:', err);
-                    showToast('ลบประเภทรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'ลบประเภทรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -5210,11 +5361,19 @@
 
                 try {
                     if (id) {
-                        const { error } = await client.from('reviews').update(payload).eq('id', id);
+                        const { error } = await withTimeout(
+                            () => client.from('reviews').update(payload).eq('id', id),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'updateReview'
+                        );
                         if (error) throw error;
                         showToast('แก้ไขข้อมูลรีวิวเรียบร้อยแล้ว');
                     } else {
-                        const { error } = await client.from('reviews').insert(payload);
+                        const { error } = await withTimeout(
+                            () => client.from('reviews').insert(payload),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'insertReview'
+                        );
                         if (error) throw error;
                         showToast('เพิ่มรีวิวใหม่เรียบร้อยแล้ว');
                     }
@@ -5223,7 +5382,7 @@
                     await loadAllStoreDataFromSupabase();
                 } catch (err) {
                     console.error('saveReviewForm error:', err);
-                    showToast('บันทึกรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'บันทึกรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -5234,13 +5393,17 @@
                 const client = getSupabaseClient();
                 if (!client) return;
                 try {
-                    const { error } = await client.from('reviews').delete().eq('id', revId);
+                    const { error } = await withTimeout(
+                        () => client.from('reviews').delete().eq('id', revId),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'deleteReview'
+                    );
                     if (error) throw error;
                     await loadAllStoreDataFromSupabase();
                     showToast('ลบรีวิวเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('deleteReview error:', err);
-                    showToast('ลบรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'ลบรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -5376,11 +5539,19 @@
 
                 try {
                     if (id) {
-                        const { error } = await client.from('contacts').update(payload).eq('id', id);
+                        const { error } = await withTimeout(
+                            () => client.from('contacts').update(payload).eq('id', id),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'updateContact'
+                        );
                         if (error) throw error;
                         showToast('แก้ไขช่องทางการติดต่อเรียบร้อยแล้ว');
                     } else {
-                        const { error } = await client.from('contacts').insert(payload);
+                        const { error } = await withTimeout(
+                            () => client.from('contacts').insert(payload),
+                            SUPABASE_REQUEST_TIMEOUT_MS,
+                            'insertContact'
+                        );
                         if (error) throw error;
                         showToast('เพิ่มช่องทางการติดต่อใหม่เรียบร้อยแล้ว');
                     }
@@ -5389,7 +5560,7 @@
                     await loadAllStoreDataFromSupabase();
                 } catch (err) {
                     console.error('saveContactForm error:', err);
-                    showToast('บันทึกช่องทางติดต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'บันทึกช่องทางติดต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
@@ -5400,13 +5571,17 @@
                 const client = getSupabaseClient();
                 if (!client) return;
                 try {
-                    const { error } = await client.from('contacts').delete().eq('id', conId);
+                    const { error } = await withTimeout(
+                        () => client.from('contacts').delete().eq('id', conId),
+                        SUPABASE_REQUEST_TIMEOUT_MS,
+                        'deleteContact'
+                    );
                     if (error) throw error;
                     await loadAllStoreDataFromSupabase();
                     showToast('ลบช่องทางการติดต่อเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('deleteContact error:', err);
-                    showToast('ลบช่องทางติดต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    showToast(getFriendlyErrorMessage(err, 'ลบช่องทางติดต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'), 'error');
                 }
             });
         }
