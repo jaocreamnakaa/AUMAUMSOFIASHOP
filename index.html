@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AUMAUMSOFIA - ปล่อยเช่ารหัส Free Fire</title>
+    <title>AUMAUMSOFIA - ปล่อยเช่ารหัสFreefire</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Prompt & Anuphan for cute, clean Thai typography -->
@@ -91,7 +91,7 @@
                             <span class="w-1.5 h-1.5 rounded-full bg-sage-500 animate-pulse"></span> เปิดร้าน
                         </span>
                     </div>
-                    <p id="header-site-subtitle" class="text-[11px] text-cocoa-600 font-medium hidden sm:block">บริการเช่ารหัส Free Fire ปลอดภัย 100%</p>
+                    <p id="header-site-subtitle" class="text-[11px] text-cocoa-600 font-medium hidden sm:block">ปล่อยเช่ารหัสFreefire</p>
                 </div>
             </button>
 
@@ -470,7 +470,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-cocoa-800 mb-1">คำโปรยใต้หัวเว็บไซต์</label>
-                                    <input type="text" id="input-site-subtitle" placeholder="เช่น บริการเช่ารหัส Free Fire ปลอดภัย 100%" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 focus:outline-none focus:border-peach-400 text-sm">
+                                    <input type="text" id="input-site-subtitle" placeholder="เช่น ปล่อยเช่ารหัสFreefire" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 focus:outline-none focus:border-peach-400 text-sm">
                                 </div>
                                 <div>
                                     <button type="button" id="btn-save-site-header" onclick="saveSiteHeaderSettings()" class="px-6 py-2.5 rounded-full bg-peach-500 hover:bg-peach-400 text-white text-sm font-medium shadow-sm transition-colors">
@@ -850,7 +850,7 @@
     <!-- ==================== FOOTER ==================== -->
     <footer class="bg-white border-t border-cream-200 mt-12 py-6">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-cocoa-600">
-            <p class="font-medium text-cocoa-800">© 2026 <span id="footer-site-title">AUMAUMSOFIA</span> - ร้านปล่อยเช่ารหัส Free Fire สไตล์มินิมอล</p>
+            <p class="font-medium text-cocoa-800">© 2026 <span id="footer-site-title">AUMAUMSOFIA</span> - ปล่อยเช่ารหัสFreefire</p>
             <p>บริการเช่ารหัสเกมปลอดภัย ส่งไว ดูแลตลอดการเช่า</p>
         </div>
     </footer>
@@ -2093,7 +2093,7 @@
             storeSettings: {
                 logoImage: '',
                 siteTitle: 'AUMAUMSOFIA',
-                siteSubtitle: 'บริการเช่ารหัส Free Fire ปลอดภัย 100%',
+                siteSubtitle: 'ปล่อยเช่ารหัสFreefire',
                 coverImage: '',
                 bannerTitle: 'ยินดีต้อนรับสู่ร้านปล่อยเช่ารหัส Free Fire',
                 bannerSubtitle: 'เลือกเช่าไอดีที่ถูกใจ สกินแรร์เพียบ พร้อมเล่นทันทีตลอด 24 ชม.',
@@ -2155,7 +2155,7 @@
             storeData.storeSettings = {
                 logoImage: isSafeMediaUrlOrData(r.logo_image) ? r.logo_image : '',
                 siteTitle: r.site_title || 'AUMAUMSOFIA',
-                siteSubtitle: r.site_subtitle || 'บริการเช่ารหัส Free Fire ปลอดภัย 100%',
+                siteSubtitle: r.site_subtitle || 'ปล่อยเช่ารหัสFreefire',
                 coverImage: isSafeMediaUrlOrData(r.cover_image) ? r.cover_image : '',
                 bannerTitle: r.banner_title || 'ยินดีต้อนรับสู่ร้านปล่อยเช่ารหัส Free Fire',
                 bannerSubtitle: r.banner_subtitle || 'เลือกเช่าไอดีที่ถูกใจ สกินแรร์เพียบ พร้อมเล่นทันทีตลอด 24 ชม.',
@@ -2964,7 +2964,7 @@
         function renderSiteHeaderBranding() {
             const logoUrl = storeData.storeSettings.logoImage || '';
             const siteTitle = storeData.storeSettings.siteTitle || 'AUMAUMSOFIA';
-            const siteSubtitle = storeData.storeSettings.siteSubtitle || 'บริการเช่ารหัส Free Fire ปลอดภัย 100%';
+            const siteSubtitle = storeData.storeSettings.siteSubtitle || 'ปล่อยเช่ารหัสFreefire';
 
             const logoImg = document.getElementById('header-logo-img');
             const logoFallback = document.getElementById('header-logo-fallback');
@@ -2980,7 +2980,7 @@
             setSafeText(document.getElementById('header-site-title'), siteTitle);
             setSafeText(document.getElementById('header-site-subtitle'), siteSubtitle);
             setSafeText(document.getElementById('footer-site-title'), siteTitle);
-            document.title = `${siteTitle} - ร้านปล่อยเช่ารหัส Free Fire สไตล์มินิมอล`;
+            document.title = `${siteTitle} - ปล่อยเช่ารหัสFreefire`;
         }
 
         function renderStoreStatusUI() {
@@ -4102,7 +4102,7 @@
                 fallbackIcon.classList.remove('hidden');
             }
             document.getElementById('input-site-title').value = storeData.storeSettings.siteTitle || 'AUMAUMSOFIA';
-            document.getElementById('input-site-subtitle').value = storeData.storeSettings.siteSubtitle || 'บริการเช่ารหัส Free Fire ปลอดภัย 100%';
+            document.getElementById('input-site-subtitle').value = storeData.storeSettings.siteSubtitle || 'ปล่อยเช่ารหัสFreefire';
         }
 
         async function clearSiteLogo() {
