@@ -525,7 +525,7 @@
                                     <input type="text" id="input-bg-music-url" placeholder="เช่น https://... (ลิงก์ MP3, YouTube, SoundCloud, Spotify, TikTok ฯลฯ)" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 focus:outline-none focus:border-peach-400 text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-cocoa-800 mb-1">หรืออัปโหลดไฟล์เพลงจากเครื่อง (MP3 / WAV / M4A)</label>
+                                    <label class="block text-xs font-medium text-cocoa-800 mb-1">หรืออัปโหลดไฟล์เพลงจากเครื่องขึ้น Storage (MP3 / WAV / M4A)</label>
                                     <input type="file" id="input-bg-music-file" accept="audio/*" onchange="handleBgMusicFileUpload(event)" class="block w-full text-xs text-cocoa-600 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-peach-100 file:text-peach-500 hover:file:bg-peach-200 cursor-pointer">
                                 </div>
 
@@ -595,7 +595,7 @@
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                             <div class="space-y-3">
-                                <label class="block text-sm font-medium text-cocoa-800">เลือกรูปปกร้านจากเครื่อง (ครอบตัดได้)</label>
+                                <label class="block text-sm font-medium text-cocoa-800">เลือกรูปปกร้านจากเครื่อง (ครอบตัดและอัปโหลดขึ้น Storage)</label>
                                 <input type="file" id="input-store-cover" accept="image/*" onchange="promptImageCropper(event, 'cover')" class="block w-full text-sm text-cocoa-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-peach-100 file:text-peach-500 hover:file:bg-peach-200 cursor-pointer">
                                 <div class="space-y-2 pt-2">
                                     <label class="block text-sm font-medium text-cocoa-800">หัวข้อแบนเนอร์หน้าร้าน</label>
@@ -919,7 +919,7 @@
 
             <div class="flex justify-end gap-2 pt-2 border-t border-cream-200">
                 <button type="button" onclick="closeModal('modal-image-cropper')" class="px-5 py-2 rounded-full bg-cream-200 text-cocoa-800 text-sm font-medium">ยกเลิก</button>
-                <button type="button" onclick="confirmCroppedImage()" class="px-6 py-2 rounded-full bg-peach-500 hover:bg-peach-400 text-white text-sm font-semibold shadow-sm">ยืนยันครอบตัดรูปนี้</button>
+                <button type="button" id="btn-confirm-crop" onclick="confirmCroppedImage()" class="px-6 py-2 rounded-full bg-peach-500 hover:bg-peach-400 text-white text-sm font-semibold shadow-sm">ยืนยันครอบตัดรูปนี้</button>
             </div>
         </div>
     </div>
@@ -1289,10 +1289,12 @@
     <!-- ==================== JAVASCRIPT LOGIC ==================== -->
     <script>
         // ==========================================
-        // 0. SUPABASE CLIENT & STATE CONFIGURATION
+        // 0. SUPABASE CLIENT & STORAGE CONFIGURATION
         // ==========================================
         const SUPABASE_URL = 'https://arxwoizkidavdfimhxxq.supabase.co';
+        // กรุณาใส่ Publishable key หรือ anon key จริงจากโปรเจกต์ Supabase (Project Settings > API Keys)
         const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeHdvaXpraWRhdmRmaW1oeHhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNjI5OTcsImV4cCI6MjExMDYzODk5N30.I5EQwrHxrV0X_MILMvosZ2xel_2XOUdSjax3ZGDqfVY';
+        const STORAGE_BUCKET = 'store-media';
 
         let supabaseClient = null;
 
@@ -1300,7 +1302,7 @@
             if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.signInWithPassword === 'function') {
                 return supabaseClient;
             }
-            if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('วาง_PUBLISHABLE_KEY_จริง')) {
+            if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
                 return null;
             }
             try {
@@ -1312,6 +1314,52 @@
                 console.error('Supabase initialization error:', err);
             }
             return null;
+        }
+
+        async function uploadBlobToStoreBucket(blobOrFile, folderName = 'images', ext = 'jpg', contentType = 'image/jpeg') {
+            const client = getSupabaseClient();
+            if (!client || !client.storage || !blobOrFile) {
+                return null;
+            }
+            const safeFolder = String(folderName || 'images').replace(/[^a-zA-Z0-9_-]/g, '');
+            const filePath = `${safeFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+            const { error: uploadError } = await client.storage
+                .from(STORAGE_BUCKET)
+                .upload(filePath, blobOrFile, {
+                    contentType: contentType || blobOrFile.type || 'application/octet-stream',
+                    upsert: false
+                });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data: urlData } = client.storage
+                .from(STORAGE_BUCKET)
+                .getPublicUrl(filePath);
+
+            return urlData?.publicUrl || null;
+        }
+
+        async function uploadCroppedDataUrlToStorage(dataUrl, folderName = 'images') {
+            if (!dataUrl || typeof dataUrl !== 'string') return '';
+            if (!dataUrl.startsWith('data:image')) return dataUrl;
+
+            const client = getSupabaseClient();
+            if (!client || !client.storage) {
+                return dataUrl;
+            }
+
+            try {
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                const publicUrl = await uploadBlobToStoreBucket(blob, folderName, 'jpg', 'image/jpeg');
+                return publicUrl || dataUrl;
+            } catch (err) {
+                console.warn('Storage upload fallback to dataUrl:', err);
+                return dataUrl;
+            }
         }
 
         // Application Loading & Error State
@@ -1856,120 +1904,140 @@
                 return;
             }
 
-            const virtualSize = 900;
-            const virtualCanvas = document.createElement('canvas');
-            virtualCanvas.width = virtualSize;
-            virtualCanvas.height = virtualSize;
-            const vCtx = virtualCanvas.getContext('2d');
+            const btn = document.getElementById('btn-confirm-crop');
+            await runWithActionGuard('confirm-crop', btn, async () => {
+                const virtualSize = 900;
+                const virtualCanvas = document.createElement('canvas');
+                virtualCanvas.width = virtualSize;
+                virtualCanvas.height = virtualSize;
+                const vCtx = virtualCanvas.getContext('2d');
 
-            drawImageLayerOnCanvas(
-                vCtx,
-                virtualSize,
-                cropperSourceImageObj,
-                manualCropState.zoom,
-                cropperRotationDeg,
-                manualCropState.imgOffsetX,
-                manualCropState.imgOffsetY
-            );
+                drawImageLayerOnCanvas(
+                    vCtx,
+                    virtualSize,
+                    cropperSourceImageObj,
+                    manualCropState.zoom,
+                    cropperRotationDeg,
+                    manualCropState.imgOffsetX,
+                    manualCropState.imgOffsetY
+                );
 
-            const safeBoxX = Math.min(0.95, Math.max(0, manualCropState.boxX || 0));
-            const safeBoxY = Math.min(0.95, Math.max(0, manualCropState.boxY || 0));
-            const safeBoxW = Math.min(1 - safeBoxX, Math.max(0.05, manualCropState.boxW || 0.8));
-            const safeBoxH = Math.min(1 - safeBoxY, Math.max(0.05, manualCropState.boxH || 0.8));
+                const safeBoxX = Math.min(0.95, Math.max(0, manualCropState.boxX || 0));
+                const safeBoxY = Math.min(0.95, Math.max(0, manualCropState.boxY || 0));
+                const safeBoxW = Math.min(1 - safeBoxX, Math.max(0.05, manualCropState.boxW || 0.8));
+                const safeBoxH = Math.min(1 - safeBoxY, Math.max(0.05, manualCropState.boxH || 0.8));
 
-            const sx = Math.round(safeBoxX * virtualSize);
-            const sy = Math.round(safeBoxY * virtualSize);
-            const sW = Math.max(10, Math.round(safeBoxW * virtualSize));
-            const sH = Math.max(10, Math.round(safeBoxH * virtualSize));
+                const sx = Math.round(safeBoxX * virtualSize);
+                const sy = Math.round(safeBoxY * virtualSize);
+                const sW = Math.max(10, Math.round(safeBoxW * virtualSize));
+                const sH = Math.max(10, Math.round(safeBoxH * virtualSize));
 
-            const maxOutEdge = 800;
-            let outW, outH;
-            if (sW >= sH) {
-                outW = maxOutEdge;
-                outH = Math.max(10, Math.round((sH / sW) * maxOutEdge));
-            } else {
-                outH = maxOutEdge;
-                outW = Math.max(10, Math.round((sW / sH) * maxOutEdge));
-            }
-
-            const outCanvas = document.createElement('canvas');
-            outCanvas.width = outW;
-            outCanvas.height = outH;
-            const outCtx = outCanvas.getContext('2d');
-            outCtx.fillStyle = '#FFFFFF';
-            outCtx.fillRect(0, 0, outW, outH);
-            outCtx.drawImage(virtualCanvas, sx, sy, sW, sH, 0, 0, outW, outH);
-
-            const croppedDataUrl = outCanvas.toDataURL('image/jpeg', 0.82);
-            const ctxType = currentCropperContext.type;
-
-            currentCropperContext = null;
-            cropperSourceImageObj = null;
-            manualCropState.dragMode = null;
-            document.getElementById('modal-image-cropper').classList.add('hidden');
-
-            if (ctxType === 'logo') {
-                storeData.storeSettings.logoImage = croppedDataUrl;
-                renderAdminSiteHeaderUI();
-                renderSiteHeaderBranding();
-                if (appState.isAdminVerified) {
-                    const ok = await saveStoreSettingsToSupabase();
-                    if (ok) showToast('ครอบตัดและบันทึกรูปโลโก้ลงฐานข้อมูลแล้ว');
+                const maxOutEdge = 800;
+                let outW, outH;
+                if (sW >= sH) {
+                    outW = maxOutEdge;
+                    outH = Math.max(10, Math.round((sH / sW) * maxOutEdge));
                 } else {
-                    showToast('ครอบตัดรูปโลโก้แล้ว (เข้าสู่ระบบแอดมินเพื่อบันทึกถาวร)');
+                    outH = maxOutEdge;
+                    outW = Math.max(10, Math.round((sW / sH) * maxOutEdge));
                 }
-            } else if (ctxType === 'cover') {
-                storeData.storeSettings.coverImage = croppedDataUrl;
-                document.getElementById('admin-cover-preview').src = croppedDataUrl;
-                renderStoreBanner();
-                if (appState.isAdminVerified) {
-                    const ok = await saveStoreSettingsToSupabase();
-                    if (ok) showToast('ครอบตัดและบันทึกรูปปกร้านลงฐานข้อมูลแล้ว');
-                } else {
-                    showToast('ครอบตัดรูปปกร้านแล้ว (เข้าสู่ระบบแอดมินเพื่อบันทึกถาวร)');
+
+                const outCanvas = document.createElement('canvas');
+                outCanvas.width = outW;
+                outCanvas.height = outH;
+                const outCtx = outCanvas.getContext('2d');
+                outCtx.fillStyle = '#FFFFFF';
+                outCtx.fillRect(0, 0, outW, outH);
+                outCtx.drawImage(virtualCanvas, sx, sy, sW, sH, 0, 0, outW, outH);
+
+                const croppedDataUrl = outCanvas.toDataURL('image/jpeg', 0.82);
+                const ctxType = currentCropperContext.type;
+
+                const folderMap = {
+                    logo: 'logos',
+                    cover: 'covers',
+                    important: 'blocks',
+                    rules: 'blocks',
+                    custom_block: 'blocks',
+                    highlight_cover: 'highlights',
+                    highlight_gallery: 'highlights',
+                    customer_review: 'reviews',
+                    admin_review: 'reviews',
+                    contact_icon: 'contacts',
+                    account_cover: 'accounts',
+                    account_extra: 'accounts'
+                };
+                const targetFolder = folderMap[ctxType] || 'images';
+                const storedImageUrl = await uploadCroppedDataUrlToStorage(croppedDataUrl, targetFolder);
+
+                currentCropperContext = null;
+                cropperSourceImageObj = null;
+                manualCropState.dragMode = null;
+                document.getElementById('modal-image-cropper').classList.add('hidden');
+
+                if (ctxType === 'logo') {
+                    storeData.storeSettings.logoImage = storedImageUrl;
+                    renderAdminSiteHeaderUI();
+                    renderSiteHeaderBranding();
+                    if (appState.isAdminVerified) {
+                        const ok = await saveStoreSettingsToSupabase();
+                        if (ok) showToast('ครอบตัดและบันทึกรูปโลโก้ลง Storage & ฐานข้อมูลแล้ว');
+                    } else {
+                        showToast('ครอบตัดรูปโลโก้แล้ว (เข้าสู่ระบบแอดมินเพื่อบันทึกถาวร)');
+                    }
+                } else if (ctxType === 'cover') {
+                    storeData.storeSettings.coverImage = storedImageUrl;
+                    document.getElementById('admin-cover-preview').src = storedImageUrl;
+                    renderStoreBanner();
+                    if (appState.isAdminVerified) {
+                        const ok = await saveStoreSettingsToSupabase();
+                        if (ok) showToast('ครอบตัดและบันทึกรูปปกร้านลง Storage & ฐานข้อมูลแล้ว');
+                    } else {
+                        showToast('ครอบตัดรูปปกร้านแล้ว (เข้าสู่ระบบแอดมินเพื่อบันทึกถาวร)');
+                    }
+                } else if (ctxType === 'important') {
+                    tempImportantImg = storedImageUrl;
+                    updateAdminImportantPreview();
+                } else if (ctxType === 'rules') {
+                    tempRulesImg = storedImageUrl;
+                    updateAdminRulesPreview();
+                } else if (ctxType === 'custom_block') {
+                    tempCustomBlockImg = storedImageUrl;
+                    updateCustomBlockPreview();
+                } else if (ctxType === 'highlight_cover') {
+                    tempHighlightImg = storedImageUrl;
+                    updateHighlightPreview();
+                } else if (ctxType === 'highlight_gallery') {
+                    tempHighlightGallery.push(storedImageUrl);
+                    if (!tempHighlightImg) tempHighlightImg = storedImageUrl;
+                    updateHighlightPreview();
+                    if (queuedExtraFiles.length > 0 && extraFileQueueIndex < queuedExtraFiles.length) {
+                        setTimeout(() => processNextExtraFileCrop('highlight_gallery'), 200);
+                    }
+                } else if (ctxType === 'customer_review') {
+                    tempCustomerReviewImg = storedImageUrl;
+                    document.getElementById('cust-rev-preview').src = storedImageUrl;
+                    document.getElementById('cust-rev-preview-box').classList.remove('hidden');
+                } else if (ctxType === 'admin_review') {
+                    tempReviewImg = storedImageUrl;
+                    document.getElementById('rev-preview').src = storedImageUrl;
+                    document.getElementById('rev-preview-box').classList.remove('hidden');
+                } else if (ctxType === 'contact_icon') {
+                    tempContactIcon = storedImageUrl;
+                    document.getElementById('con-preview').src = storedImageUrl;
+                    document.getElementById('con-preview-box').classList.remove('hidden');
+                } else if (ctxType === 'account_cover') {
+                    tempAccountCover = storedImageUrl;
+                    updateAccountImagePreviews();
+                } else if (ctxType === 'account_extra') {
+                    tempAccountExtras.push(storedImageUrl);
+                    updateAccountImagePreviews();
+                    if (queuedExtraFiles.length > 0 && extraFileQueueIndex < queuedExtraFiles.length) {
+                        setTimeout(() => processNextExtraFileCrop('account_extra'), 200);
+                    }
                 }
-            } else if (ctxType === 'important') {
-                tempImportantImg = croppedDataUrl;
-                updateAdminImportantPreview();
-            } else if (ctxType === 'rules') {
-                tempRulesImg = croppedDataUrl;
-                updateAdminRulesPreview();
-            } else if (ctxType === 'custom_block') {
-                tempCustomBlockImg = croppedDataUrl;
-                updateCustomBlockPreview();
-            } else if (ctxType === 'highlight_cover') {
-                tempHighlightImg = croppedDataUrl;
-                updateHighlightPreview();
-            } else if (ctxType === 'highlight_gallery') {
-                tempHighlightGallery.push(croppedDataUrl);
-                if (!tempHighlightImg) tempHighlightImg = croppedDataUrl;
-                updateHighlightPreview();
-                if (queuedExtraFiles.length > 0 && extraFileQueueIndex < queuedExtraFiles.length) {
-                    setTimeout(() => processNextExtraFileCrop('highlight_gallery'), 200);
-                }
-            } else if (ctxType === 'customer_review') {
-                tempCustomerReviewImg = croppedDataUrl;
-                document.getElementById('cust-rev-preview').src = croppedDataUrl;
-                document.getElementById('cust-rev-preview-box').classList.remove('hidden');
-            } else if (ctxType === 'admin_review') {
-                tempReviewImg = croppedDataUrl;
-                document.getElementById('rev-preview').src = croppedDataUrl;
-                document.getElementById('rev-preview-box').classList.remove('hidden');
-            } else if (ctxType === 'contact_icon') {
-                tempContactIcon = croppedDataUrl;
-                document.getElementById('con-preview').src = croppedDataUrl;
-                document.getElementById('con-preview-box').classList.remove('hidden');
-            } else if (ctxType === 'account_cover') {
-                tempAccountCover = croppedDataUrl;
-                updateAccountImagePreviews();
-            } else if (ctxType === 'account_extra') {
-                tempAccountExtras.push(croppedDataUrl);
-                updateAccountImagePreviews();
-                if (queuedExtraFiles.length > 0 && extraFileQueueIndex < queuedExtraFiles.length) {
-                    setTimeout(() => processNextExtraFileCrop('account_extra'), 200);
-                }
-            }
-            lucide.createIcons();
+                lucide.createIcons();
+            });
         }
 
         function createSampleSvg(bgColor, accentColor, title, subtitle, isSquare = true) {
@@ -2158,7 +2226,7 @@
             const client = getSupabaseClient();
             if (!client) {
                 appState.isLoadingStore = false;
-                appState.storeError = 'กรุณาใส่ Publishable Key จริงของโปรเจกต์ Supabase ในไฟล์ index.html';
+                appState.storeError = 'ไม่พบการเชื่อมต่อ Supabase กรุณาตรวจสอบการตั้งค่า URL และ Key';
                 renderAllStorefrontViews();
                 return;
             }
@@ -2410,7 +2478,7 @@
             event.preventDefault();
             const client = getSupabaseClient();
             if (!client || !client.auth) {
-                showToast('กรุณาใส่ Publishable Key จริงของโปรเจกต์ Supabase ก่อนเข้าสู่ระบบ', 'error');
+                showToast('ไม่พบการเชื่อมต่อ Supabase Auth กรุณาตรวจสอบการตั้งค่า', 'error');
                 return;
             }
 
@@ -3720,7 +3788,7 @@
             event.preventDefault();
             const client = getSupabaseClient();
             if (!client) {
-                showToast('กรุณาใส่ Publishable Key จริงของโปรเจกต์ Supabase', 'error');
+                showToast('ไม่พบการเชื่อมต่อ Supabase กรุณาตรวจสอบการตั้งค่า', 'error');
                 return;
             }
 
@@ -4062,6 +4130,23 @@
             const file = event.target.files[0];
             event.target.value = '';
             if (!file) return;
+
+            const client = getSupabaseClient();
+            if (client && client.storage && appState.isAdminVerified) {
+                try {
+                    const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                    const ext = extMatch ? extMatch[1].toLowerCase() : 'mp3';
+                    const uploadedUrl = await uploadBlobToStoreBucket(file, 'music', ext, file.type || 'audio/mpeg');
+                    if (uploadedUrl) {
+                        document.getElementById('input-bg-music-url').value = uploadedUrl;
+                        await saveBackgroundMusicSettings();
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('Music storage upload fallback to DataURL:', err);
+                }
+            }
+
             const reader = new FileReader();
             reader.onload = async (e) => {
                 document.getElementById('input-bg-music-url').value = e.target.result;
@@ -4275,12 +4360,16 @@
                 }
 
                 try {
+                    const finalImgUrl = tempCustomBlockImg
+                        ? await uploadCroppedDataUrlToStorage(tempCustomBlockImg, 'blocks')
+                        : '';
+
                     const payload = {
                         title,
                         subtitle,
                         mode,
                         content_text: text,
-                        image_url: tempCustomBlockImg || ''
+                        image_url: finalImgUrl
                     };
 
                     if (id) {
@@ -4467,13 +4556,18 @@
 
                 const id = document.getElementById('hl-id').value;
                 const title = document.getElementById('hl-title').value.trim();
-                const finalImages = validGallery.length > 0 ? [...validGallery] : [tempHighlightImg];
 
                 try {
+                    const finalCover = await uploadCroppedDataUrlToStorage(tempHighlightImg, 'highlights');
+                    const rawGallery = validGallery.length > 0 ? [...validGallery] : [tempHighlightImg];
+                    const finalGallery = await Promise.all(
+                        rawGallery.map(u => uploadCroppedDataUrlToStorage(u, 'highlights'))
+                    );
+
                     const payload = {
                         title,
-                        cover_image: tempHighlightImg,
-                        gallery_images: finalImages
+                        cover_image: finalCover,
+                        gallery_images: finalGallery
                     };
 
                     if (id) {
@@ -4561,7 +4655,12 @@
                     return;
                 }
 
-                storeData.importantInfoSettings = { visible, title, mode, text, image: tempImportantImg };
+                const finalImg = tempImportantImg
+                    ? await uploadCroppedDataUrlToStorage(tempImportantImg, 'blocks')
+                    : '';
+                tempImportantImg = finalImg;
+
+                storeData.importantInfoSettings = { visible, title, mode, text, image: finalImg };
                 renderStoreAll1x1Blocks();
                 lucide.createIcons();
                 const ok = await saveStoreSettingsToSupabase();
@@ -4616,7 +4715,12 @@
                     return;
                 }
 
-                storeData.rulesSettings = { visible, title, mode, text, image: tempRulesImg };
+                const finalImg = tempRulesImg
+                    ? await uploadCroppedDataUrlToStorage(tempRulesImg, 'blocks')
+                    : '';
+                tempRulesImg = finalImg;
+
+                storeData.rulesSettings = { visible, title, mode, text, image: finalImg };
                 renderStoreAll1x1Blocks();
                 lucide.createIcons();
                 const ok = await saveStoreSettingsToSupabase();
@@ -4967,23 +5071,28 @@
                 const categoryName = document.getElementById('acc-category').value;
                 const matchedCat = (storeData.categoryRecords || []).find(c => c.name === categoryName);
 
-                const payload = {
-                    code: codeVal,
-                    category_id: matchedCat ? matchedCat.id : null,
-                    category_name: categoryName,
-                    status: document.getElementById('acc-status').value,
-                    cover_image: tempAccountCover,
-                    extra_images: tempAccountExtras,
-                    outfits_count: document.getElementById('acc-outfits').value.trim(),
-                    guns_count: document.getElementById('acc-guns').value.trim(),
-                    price: document.getElementById('acc-price').value.trim(),
-                    rare_skins: document.getElementById('acc-rare').value.trim(),
-                    items_detail: document.getElementById('acc-items').value.trim(),
-                    extra_info: document.getElementById('acc-extra-info').value.trim(),
-                    rent_link: document.getElementById('acc-link').value.trim()
-                };
-
                 try {
+                    const finalCover = await uploadCroppedDataUrlToStorage(tempAccountCover, 'accounts');
+                    const finalExtras = await Promise.all(
+                        (tempAccountExtras || []).map(u => uploadCroppedDataUrlToStorage(u, 'accounts'))
+                    );
+
+                    const payload = {
+                        code: codeVal,
+                        category_id: matchedCat ? matchedCat.id : null,
+                        category_name: categoryName,
+                        status: document.getElementById('acc-status').value,
+                        cover_image: finalCover,
+                        extra_images: finalExtras,
+                        outfits_count: document.getElementById('acc-outfits').value.trim(),
+                        guns_count: document.getElementById('acc-guns').value.trim(),
+                        price: document.getElementById('acc-price').value.trim(),
+                        rare_skins: document.getElementById('acc-rare').value.trim(),
+                        items_detail: document.getElementById('acc-items').value.trim(),
+                        extra_info: document.getElementById('acc-extra-info').value.trim(),
+                        rent_link: document.getElementById('acc-link').value.trim()
+                    };
+
                     if (id) {
                         const { error } = await client.from('accounts').update(payload).eq('id', id);
                         if (error) throw error;
@@ -5145,11 +5254,15 @@
                 }
 
                 try {
+                    const finalImg = tempReviewImg
+                        ? await uploadCroppedDataUrlToStorage(tempReviewImg, 'reviews')
+                        : '';
+
                     const payload = {
                         author,
                         rating,
                         review_text: text,
-                        image_url: tempReviewImg || ''
+                        image_url: finalImg
                     };
 
                     if (id) {
@@ -5299,14 +5412,15 @@
                 }
 
                 const id = document.getElementById('con-id').value;
-                const payload = {
-                    name: document.getElementById('con-name').value.trim(),
-                    subtitle: document.getElementById('con-sub').value.trim(),
-                    url: document.getElementById('con-url').value.trim(),
-                    icon_url: tempContactIcon
-                };
-
                 try {
+                    const finalIconUrl = await uploadCroppedDataUrlToStorage(tempContactIcon, 'contacts');
+                    const payload = {
+                        name: document.getElementById('con-name').value.trim(),
+                        subtitle: document.getElementById('con-sub').value.trim(),
+                        url: document.getElementById('con-url').value.trim(),
+                        icon_url: finalIconUrl
+                    };
+
                     if (id) {
                         const { error } = await client.from('contacts').update(payload).eq('id', id);
                         if (error) throw error;
