@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FF Cozy Rent - ร้านปล่อยเช่ารหัส Free Fire สไตล์มินิมอล</title>
+    <title>AUMAUMSOFIA - ร้านปล่อยเช่ารหัส Free Fire สไตล์มินิมอล</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Prompt & Anuphan for cute, clean Thai typography -->
@@ -83,7 +83,7 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h1 id="header-site-title" class="font-bold text-base sm:text-lg text-cocoa-900 leading-tight">FF Cozy Rent</h1>
+                        <h1 id="header-site-title" class="font-bold text-base sm:text-lg text-cocoa-900 leading-tight">AUMAUMSOFIA</h1>
                         <!-- Store Open/Close Status Badge -->
                         <span id="header-store-status-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-600 text-[10px] sm:text-[11px] font-semibold">
                             <span class="w-1.5 h-1.5 rounded-full bg-sage-500 animate-pulse"></span> เปิดร้าน
@@ -141,7 +141,7 @@
 
             <!-- Store Cover Banner -->
             <div id="store-banner-wrapper" class="relative rounded-3xl overflow-hidden bg-cream-200 shadow-soft border border-white aspect-[16/7]">
-                <img id="store-cover-img" src="" alt="หน้าปกร้าน" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/1200x400/F9F5EE/78685E?text=FF+Cozy+Rent+Store'">
+                <img id="store-cover-img" src="" alt="หน้าปกร้าน" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/1200x400/F9F5EE/78685E?text=AUMAUMSOFIA+Store'">
                 <div class="absolute inset-0 bg-gradient-to-t from-cocoa-900/60 via-transparent to-transparent flex items-end p-5 sm:p-8">
                     <div class="text-white max-w-xl">
                         <div class="flex flex-wrap items-center gap-2 mb-2">
@@ -448,7 +448,7 @@
                             <div class="md:col-span-8 space-y-3">
                                 <div>
                                     <label class="block text-sm font-medium text-cocoa-800 mb-1">ชื่อหัวเว็บไซต์ (ชื่อร้าน) *</label>
-                                    <input type="text" id="input-site-title" placeholder="เช่น FF Cozy Rent" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 focus:outline-none focus:border-peach-400 text-sm">
+                                    <input type="text" id="input-site-title" placeholder="เช่น AUMAUMSOFIA" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 focus:outline-none focus:border-peach-400 text-sm">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-cocoa-800 mb-1">คำโปรยใต้หัวเว็บไซต์</label>
@@ -600,15 +600,15 @@
                         </div>
                     </div>
 
-                    <!-- Circular Highlights Management (Cover Image + Gallery Images + Title) -->
+                    <!-- Circular Highlights Management (Cover Image + Gallery Images + Title + Size Selection) -->
                     <div class="bg-white rounded-3xl p-6 border border-cream-200 shadow-card space-y-5">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h3 class="font-bold text-lg text-cocoa-900 flex items-center gap-2">
                                     <i data-lucide="sparkles" class="w-5 h-5 text-peach-500"></i>
-                                    จัดการไฮไลท์หน้าร้าน (เพิ่มรูปลงในไฮไลท์ได้)
+                                    จัดการไฮไลท์หน้าร้าน (เลือกขนาดรูปและเพิ่มรูปลงในไฮไลท์ได้)
                                 </h3>
-                                <p class="text-xs text-cocoa-600">กำหนดรูปปกไฮไลท์ ชื่อไฮไลท์ และเพิ่มรูปภาพภายในไฮไลท์ได้หลายรูป</p>
+                                <p class="text-xs text-cocoa-600">กำหนดรูปปกไฮไลท์ ชื่อไฮไลท์ และเลือกขนาดรูปภาพภายในไฮไลท์ได้ตามต้องการ</p>
                             </div>
                             <button type="button" onclick="openHighlightModal()" class="px-4 py-2.5 rounded-full bg-cocoa-900 hover:bg-cocoa-800 text-white text-sm font-medium flex items-center gap-2 transition-colors">
                                 <i data-lucide="plus" class="w-4 h-4"></i>
@@ -832,22 +832,34 @@
     <!-- ==================== FOOTER ==================== -->
     <footer class="bg-white border-t border-cream-200 mt-12 py-6">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-cocoa-600">
-            <p class="font-medium text-cocoa-800">© 2026 <span id="footer-site-title">FF Cozy Rent</span> - ร้านปล่อยเช่ารหัส Free Fire สไตล์มินิมอล</p>
+            <p class="font-medium text-cocoa-800">© 2026 <span id="footer-site-title">AUMAUMSOFIA</span> - ร้านปล่อยเช่ารหัส Free Fire สไตล์มินิมอล</p>
             <p>บริการเช่ารหัสเกมปลอดภัย ส่งไว ดูแลตลอดการเช่า</p>
         </div>
     </footer>
 
     <!-- ==================== MODALS ==================== -->
 
-    <!-- 0. Interactive Manual Image Cropper Modal (Drag / Pan / Resize Crop Frame + Zoom + Rotate) -->
+    <!-- 0. Interactive Manual Image Cropper Modal (Drag / Pan / Resize Crop Frame + Aspect Ratio Selector + Zoom + Rotate) -->
     <div id="modal-image-cropper" onclick="handleBackdropClose(event, 'modal-image-cropper')" class="fixed inset-0 z-[70] hidden bg-cocoa-900/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-cream-200 space-y-4">
             <div class="flex items-center justify-between border-b border-cream-200 pb-3">
-                <h3 class="text-base sm:text-lg font-bold text-cocoa-900 flex items-center gap-2">
+                <h3 id="cropper-modal-title" class="text-base sm:text-lg font-bold text-cocoa-900 flex items-center gap-2">
                     <i data-lucide="crop" class="w-5 h-5 text-peach-500"></i>
-                    ครอบตัดรูปภาพด้วยตนเอง (สัดส่วน 1:1)
+                    <span>ครอบตัดรูปภาพด้วยตนเอง</span>
                 </h3>
                 <button type="button" onclick="closeModal('modal-image-cropper')" class="p-2 rounded-full hover:bg-cream-100 text-cocoa-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- Aspect Ratio Selector Bar (Visible especially for Highlight images so admin can choose desired image size/ratio) -->
+            <div id="cropper-aspect-bar" class="hidden bg-cream-100 p-2.5 rounded-2xl border border-cream-200 space-y-1.5">
+                <span class="block text-[11px] font-semibold text-cocoa-800 px-1">เลือกขนาด / สัดส่วนรูปภาพที่ต้องการใส่ในไฮไลท์:</span>
+                <div class="flex flex-wrap gap-1.5">
+                    <button type="button" onclick="setCropperAspectRatio('1:1')" data-aspect="1:1" class="crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-peach-500 text-white shadow-sm transition-all">1:1 จัตุรัส</button>
+                    <button type="button" onclick="setCropperAspectRatio('4:5')" data-aspect="4:5" class="crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-cocoa-700 border border-cream-200 hover:bg-cream-200 transition-all">4:5 แนวตั้ง</button>
+                    <button type="button" onclick="setCropperAspectRatio('9:16')" data-aspect="9:16" class="crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-cocoa-700 border border-cream-200 hover:bg-cream-200 transition-all">9:16 สตอรี่</button>
+                    <button type="button" onclick="setCropperAspectRatio('16:9')" data-aspect="16:9" class="crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-cocoa-700 border border-cream-200 hover:bg-cream-200 transition-all">16:9 แนวนอน</button>
+                    <button type="button" onclick="setCropperAspectRatio('original')" data-aspect="original" class="crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-cocoa-700 border border-cream-200 hover:bg-cream-200 transition-all">ขนาดต้นฉบับ</button>
+                </div>
             </div>
 
             <div class="space-y-3">
@@ -883,7 +895,7 @@
                             รีเซ็ตตำแหน่ง
                         </button>
                     </div>
-                    <span class="text-[11px] text-cocoa-600">ลากกรอบสี่เหลี่ยมหรือลากมุมกรอบเพื่อครอบตัดเอง</span>
+                    <span class="text-[11px] text-cocoa-600">ลากกรอบหรือลากมุมกรอบเพื่อครอบตัดเอง</span>
                 </div>
             </div>
 
@@ -953,7 +965,7 @@
         </div>
     </div>
 
-    <!-- 1.5 Highlight Story Viewer Modal (For Customers to view images inside a highlight) -->
+    <!-- 1.5 Highlight Story Viewer Modal (For Customers to view images inside a highlight with adaptive sizing) -->
     <div id="modal-highlight-viewer" onclick="handleBackdropClose(event, 'modal-highlight-viewer')" class="fixed inset-0 z-50 hidden bg-cocoa-900/75 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-cream-200 p-5 space-y-4">
             <div class="flex items-center justify-between border-b border-cream-200 pb-3">
@@ -969,8 +981,8 @@
                 </button>
             </div>
 
-            <div class="relative rounded-2xl overflow-hidden bg-cream-100 border border-cream-200 aspect-square flex items-center justify-center">
-                <img id="hl-viewer-main-img" src="" alt="รูปในไฮไลท์" class="w-full h-full object-cover">
+            <div class="relative rounded-2xl overflow-hidden bg-cream-100 border border-cream-200 min-h-[260px] max-h-[65vh] flex items-center justify-center">
+                <img id="hl-viewer-main-img" src="" alt="รูปในไฮไลท์" class="max-w-full max-h-[65vh] w-auto h-auto object-contain mx-auto">
                 <button type="button" id="hl-viewer-prev" onclick="navigateHighlightViewer(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-cocoa-900 shadow-md flex items-center justify-center">
                     <i data-lucide="chevron-left" class="w-5 h-5"></i>
                 </button>
@@ -1121,7 +1133,7 @@
         </div>
     </div>
 
-    <!-- 3. Admin Circular Highlight Modal (Cover Image + Extra Images Inside Highlight + Title) -->
+    <!-- 3. Admin Circular Highlight Modal (Cover Image + Extra Images Inside Highlight with Customizable Size + Title) -->
     <div id="modal-admin-highlight" onclick="handleBackdropClose(event, 'modal-admin-highlight')" class="fixed inset-0 z-50 hidden bg-cocoa-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-cream-200 p-6 space-y-4">
             <div class="flex items-center justify-between border-b border-cream-200 pb-3">
@@ -1145,7 +1157,7 @@
                     <input type="text" id="hl-title" required placeholder="เช่น โปรโมชั่น, ส่งไว 1 นาที, รีวิวแน่น" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400">
                 </div>
                 <div class="space-y-2">
-                    <label class="block text-sm font-medium text-cocoa-800">เพิ่มรูปภาพลงในไฮไลท์ (เลือกได้หลายรูป / ครอบตัดทีละรูปได้)</label>
+                    <label class="block text-sm font-medium text-cocoa-800">เพิ่มรูปภาพลงในไฮไลท์ (เลือกขนาดรูป 1:1, 4:5, 9:16, 16:9 หรือต้นฉบับได้)</label>
                     <input type="file" id="hl-gallery-files" accept="image/*" multiple onchange="promptImageCropper(event, 'highlight_gallery')" class="block w-full text-sm text-cocoa-600 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-cream-200 file:text-cocoa-800 hover:file:bg-cream-300 cursor-pointer">
                     <div id="hl-gallery-previews" class="grid grid-cols-3 gap-2 pt-1">
                         <!-- Highlight inner gallery thumbnails -->
@@ -1223,7 +1235,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-cocoa-800 mb-1">คำอธิบายสั้นๆ / ไอดี</label>
-                    <input type="text" id="con-sub" placeholder="เช่น @ffcozyrent (ตอบไวใน 1 นาที)" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400">
+                    <input type="text" id="con-sub" placeholder="เช่น @aumaumsofia (ตอบไวใน 1 นาที)" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-cocoa-800 mb-1">ลิงก์ปลายทาง (URL) *</label>
@@ -1267,11 +1279,13 @@
         let queuedExtraFiles = [];
         let extraFileQueueIndex = 0;
 
-        // Manual crop box & image pan state (normalized 0..1 relative to canvas viewport)
+        // Manual crop box & image pan state (normalized 0..1 relative to canvas viewport, supporting custom aspect ratios)
         let manualCropState = {
+            aspectMode: '1:1', // '1:1' | '4:5' | '9:16' | '16:9' | 'original'
             boxX: 0.1,
             boxY: 0.1,
-            boxSize: 0.8,
+            boxW: 0.8,
+            boxH: 0.8,
             imgOffsetX: 0,
             imgOffsetY: 0,
             zoom: 1,
@@ -1280,15 +1294,89 @@
             startClientY: 0,
             startBoxX: 0.1,
             startBoxY: 0.1,
-            startBoxSize: 0.8,
+            startBoxW: 0.8,
+            startBoxH: 0.8,
             startImgOffsetX: 0,
             startImgOffsetY: 0
         };
 
+        function getTargetAspectRatioValue() {
+            const mode = manualCropState.aspectMode || '1:1';
+            if (mode === '4:5') return 4 / 5;
+            if (mode === '9:16') return 9 / 16;
+            if (mode === '16:9') return 16 / 9;
+            if (mode === 'original' && cropperSourceImageObj) {
+                const isRotated = cropperRotationDeg % 180 !== 0;
+                const w = isRotated ? cropperSourceImageObj.height : cropperSourceImageObj.width;
+                const h = isRotated ? cropperSourceImageObj.width : cropperSourceImageObj.height;
+                if (w > 0 && h > 0) return w / h;
+            }
+            return 1;
+        }
+
+        function computeBoxDimensionsForScale(scaleNorm) {
+            const ratio = getTargetAspectRatioValue();
+            let w, h;
+            if (ratio >= 1) {
+                w = scaleNorm;
+                h = scaleNorm / ratio;
+            } else {
+                h = scaleNorm;
+                w = scaleNorm * ratio;
+            }
+            return {
+                w: Math.min(0.98, Math.max(0.15, w)),
+                h: Math.min(0.98, Math.max(0.15, h))
+            };
+        }
+
+        function setCropperAspectRatio(mode) {
+            manualCropState.aspectMode = mode;
+            document.querySelectorAll('.crop-aspect-btn').forEach(btn => {
+                if (btn.getAttribute('data-aspect') === mode) {
+                    btn.className = 'crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-peach-500 text-white shadow-sm transition-all';
+                } else {
+                    btn.className = 'crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-cocoa-700 border border-cream-200 hover:bg-cream-200 transition-all';
+                }
+            });
+
+            const sliderVal = parseInt(document.getElementById('crop-box-size-range')?.value, 10) || 82;
+            const dims = computeBoxDimensionsForScale(sliderVal / 100);
+            manualCropState.boxW = dims.w;
+            manualCropState.boxH = dims.h;
+            manualCropState.boxX = Math.max(0, (1 - dims.w) / 2);
+            manualCropState.boxY = Math.max(0, (1 - dims.h) / 2);
+            drawInteractiveCropperCanvas();
+        }
+
         function resetManualCropperState() {
-            manualCropState.boxX = 0.1;
-            manualCropState.boxY = 0.1;
-            manualCropState.boxSize = 0.8;
+            const allowCustomRatio = currentCropperContext && currentCropperContext.type === 'highlight_gallery';
+            const defaultMode = allowCustomRatio ? (manualCropState.aspectMode || '1:1') : '1:1';
+            manualCropState.aspectMode = defaultMode;
+
+            const aspectBar = document.getElementById('cropper-aspect-bar');
+            const titleEl = document.getElementById('cropper-modal-title');
+            if (allowCustomRatio) {
+                aspectBar.classList.remove('hidden');
+                if (titleEl) titleEl.innerHTML = `<i data-lucide="crop" class="w-5 h-5 text-peach-500"></i><span>ครอบตัดและเลือกขนาดรูปไฮไลท์</span>`;
+            } else {
+                aspectBar.classList.add('hidden');
+                if (titleEl) titleEl.innerHTML = `<i data-lucide="crop" class="w-5 h-5 text-peach-500"></i><span>ครอบตัดรูปภาพด้วยตนเอง (สัดส่วน 1:1)</span>`;
+            }
+
+            document.querySelectorAll('.crop-aspect-btn').forEach(btn => {
+                if (btn.getAttribute('data-aspect') === defaultMode) {
+                    btn.className = 'crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-semibold bg-peach-500 text-white shadow-sm transition-all';
+                } else {
+                    btn.className = 'crop-aspect-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-cocoa-700 border border-cream-200 hover:bg-cream-200 transition-all';
+                }
+            });
+
+            const dims = computeBoxDimensionsForScale(0.8);
+            manualCropState.boxW = dims.w;
+            manualCropState.boxH = dims.h;
+            manualCropState.boxX = (1 - dims.w) / 2;
+            manualCropState.boxY = (1 - dims.h) / 2;
             manualCropState.imgOffsetX = 0;
             manualCropState.imgOffsetY = 0;
             manualCropState.zoom = 1;
@@ -1305,13 +1393,15 @@
 
         function handleCropBoxSizeChange(val) {
             const pct = Math.min(96, Math.max(35, parseInt(val, 10) || 80));
-            const newSize = pct / 100;
-            const centerX = manualCropState.boxX + manualCropState.boxSize / 2;
-            const centerY = manualCropState.boxY + manualCropState.boxSize / 2;
+            const newScale = pct / 100;
+            const centerX = manualCropState.boxX + manualCropState.boxW / 2;
+            const centerY = manualCropState.boxY + manualCropState.boxH / 2;
 
-            manualCropState.boxSize = newSize;
-            manualCropState.boxX = Math.min(1 - newSize, Math.max(0, centerX - newSize / 2));
-            manualCropState.boxY = Math.min(1 - newSize, Math.max(0, centerY - newSize / 2));
+            const dims = computeBoxDimensionsForScale(newScale);
+            manualCropState.boxW = dims.w;
+            manualCropState.boxH = dims.h;
+            manualCropState.boxX = Math.min(1 - dims.w, Math.max(0, centerX - dims.w / 2));
+            manualCropState.boxY = Math.min(1 - dims.h, Math.max(0, centerY - dims.h / 2));
             document.getElementById('crop-box-size-label').textContent = pct + '%';
             drawInteractiveCropperCanvas();
         }
@@ -1382,6 +1472,14 @@
 
         function rotateCropImage() {
             cropperRotationDeg = (cropperRotationDeg + 90) % 360;
+            if (manualCropState.aspectMode === 'original') {
+                const sliderVal = parseInt(document.getElementById('crop-box-size-range')?.value, 10) || 80;
+                const dims = computeBoxDimensionsForScale(sliderVal / 100);
+                manualCropState.boxW = dims.w;
+                manualCropState.boxH = dims.h;
+                manualCropState.boxX = Math.max(0, (1 - dims.w) / 2);
+                manualCropState.boxY = Math.max(0, (1 - dims.h) / 2);
+            }
             drawInteractiveCropperCanvas();
         }
 
@@ -1425,14 +1523,15 @@
 
             const bx = manualCropState.boxX * size;
             const by = manualCropState.boxY * size;
-            const bs = manualCropState.boxSize * size;
+            const bw = manualCropState.boxW * size;
+            const bh = manualCropState.boxH * size;
 
             // Darken outside crop box
             ctx.save();
             ctx.fillStyle = 'rgba(24, 19, 16, 0.58)';
             ctx.beginPath();
             ctx.rect(0, 0, size, size);
-            ctx.rect(bx, by, bs, bs);
+            ctx.rect(bx, by, bw, bh);
             ctx.fill('evenodd');
             ctx.restore();
 
@@ -1440,29 +1539,29 @@
             ctx.save();
             ctx.strokeStyle = '#FFA88C';
             ctx.lineWidth = 3;
-            ctx.strokeRect(bx, by, bs, bs);
+            ctx.strokeRect(bx, by, bw, bh);
 
             // Rule of thirds grid lines inside crop frame
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(bx + bs / 3, by);
-            ctx.lineTo(bx + bs / 3, by + bs);
-            ctx.moveTo(bx + (bs * 2) / 3, by);
-            ctx.lineTo(bx + (bs * 2) / 3, by + bs);
-            ctx.moveTo(bx, by + bs / 3);
-            ctx.lineTo(bx + bs, by + bs / 3);
-            ctx.moveTo(bx, by + (bs * 2) / 3);
-            ctx.lineTo(bx + bs, by + (bs * 2) / 3);
+            ctx.moveTo(bx + bw / 3, by);
+            ctx.lineTo(bx + bw / 3, by + bh);
+            ctx.moveTo(bx + (bw * 2) / 3, by);
+            ctx.lineTo(bx + (bw * 2) / 3, by + bh);
+            ctx.moveTo(bx, by + bh / 3);
+            ctx.lineTo(bx + bw, by + bh / 3);
+            ctx.moveTo(bx, by + (bh * 2) / 3);
+            ctx.lineTo(bx + bw, by + (bh * 2) / 3);
             ctx.stroke();
 
             // Corner drag handles
             const handleR = 11;
             const corners = [
                 [bx, by],
-                [bx + bs, by],
-                [bx, by + bs],
-                [bx + bs, by + bs]
+                [bx + bw, by],
+                [bx, by + bh],
+                [bx + bw, by + bh]
             ];
             corners.forEach(([cx, cy]) => {
                 ctx.fillStyle = '#F68B6B';
@@ -1494,26 +1593,28 @@
                 const pos = getNormPos(clientX, clientY);
                 const bx = manualCropState.boxX;
                 const by = manualCropState.boxY;
-                const bs = manualCropState.boxSize;
+                const bw = manualCropState.boxW;
+                const bh = manualCropState.boxH;
                 const tol = 0.075;
 
                 manualCropState.startClientX = pos.x;
                 manualCropState.startClientY = pos.y;
                 manualCropState.startBoxX = bx;
                 manualCropState.startBoxY = by;
-                manualCropState.startBoxSize = bs;
+                manualCropState.startBoxW = bw;
+                manualCropState.startBoxH = bh;
                 manualCropState.startImgOffsetX = manualCropState.imgOffsetX;
                 manualCropState.startImgOffsetY = manualCropState.imgOffsetY;
 
-                if (Math.hypot(pos.x - (bx + bs), pos.y - (by + bs)) <= tol) {
+                if (Math.hypot(pos.x - (bx + bw), pos.y - (by + bh)) <= tol) {
                     manualCropState.dragMode = 'resize_br';
                 } else if (Math.hypot(pos.x - bx, pos.y - by) <= tol) {
                     manualCropState.dragMode = 'resize_tl';
-                } else if (Math.hypot(pos.x - (bx + bs), pos.y - by) <= tol) {
+                } else if (Math.hypot(pos.x - (bx + bw), pos.y - by) <= tol) {
                     manualCropState.dragMode = 'resize_tr';
-                } else if (Math.hypot(pos.x - bx, pos.y - (by + bs)) <= tol) {
+                } else if (Math.hypot(pos.x - bx, pos.y - (by + bh)) <= tol) {
                     manualCropState.dragMode = 'resize_bl';
-                } else if (pos.x >= bx && pos.x <= bx + bs && pos.y >= by && pos.y <= by + bs) {
+                } else if (pos.x >= bx && pos.x <= bx + bw && pos.y >= by && pos.y <= by + bh) {
                     manualCropState.dragMode = 'move_box';
                 } else {
                     manualCropState.dragMode = 'pan_img';
@@ -1525,46 +1626,64 @@
                 const pos = getNormPos(clientX, clientY);
                 const dx = pos.x - manualCropState.startClientX;
                 const dy = pos.y - manualCropState.startClientY;
-                const minSize = 0.30;
+                const ratio = getTargetAspectRatioValue();
+                const minScale = 0.25;
 
                 if (manualCropState.dragMode === 'move_box') {
-                    const bs = manualCropState.boxSize;
-                    manualCropState.boxX = Math.min(1 - bs, Math.max(0, manualCropState.startBoxX + dx));
-                    manualCropState.boxY = Math.min(1 - bs, Math.max(0, manualCropState.startBoxY + dy));
+                    const bw = manualCropState.boxW;
+                    const bh = manualCropState.boxH;
+                    manualCropState.boxX = Math.min(1 - bw, Math.max(0, manualCropState.startBoxX + dx));
+                    manualCropState.boxY = Math.min(1 - bh, Math.max(0, manualCropState.startBoxY + dy));
                 } else if (manualCropState.dragMode === 'resize_br') {
                     const delta = Math.max(dx, dy);
-                    const maxAllowed = Math.min(1 - manualCropState.startBoxX, 1 - manualCropState.startBoxY);
-                    const newSize = Math.min(maxAllowed, Math.max(minSize, manualCropState.startBoxSize + delta));
-                    manualCropState.boxSize = newSize;
-                    syncCropSizeSliderUI(newSize);
+                    let newW = Math.max(minScale, manualCropState.startBoxW + delta);
+                    let newH = newW / ratio;
+                    const maxW = 1 - manualCropState.startBoxX;
+                    const maxH = 1 - manualCropState.startBoxY;
+                    if (newW > maxW) { newW = maxW; newH = newW / ratio; }
+                    if (newH > maxH) { newH = maxH; newW = newH * ratio; }
+                    manualCropState.boxW = newW;
+                    manualCropState.boxH = newH;
+                    syncCropSizeSliderUI(Math.max(newW, newH));
                 } else if (manualCropState.dragMode === 'resize_tl') {
                     const delta = Math.min(dx, dy);
-                    const anchorRight = manualCropState.startBoxX + manualCropState.startBoxSize;
-                    const anchorBottom = manualCropState.startBoxY + manualCropState.startBoxSize;
-                    const maxAllowed = Math.min(anchorRight, anchorBottom);
-                    const newSize = Math.min(maxAllowed, Math.max(minSize, manualCropState.startBoxSize - delta));
-                    manualCropState.boxSize = newSize;
-                    manualCropState.boxX = anchorRight - newSize;
-                    manualCropState.boxY = anchorBottom - newSize;
-                    syncCropSizeSliderUI(newSize);
+                    const anchorRight = manualCropState.startBoxX + manualCropState.startBoxW;
+                    const anchorBottom = manualCropState.startBoxY + manualCropState.startBoxH;
+                    let newW = Math.max(minScale, manualCropState.startBoxW - delta);
+                    let newH = newW / ratio;
+                    if (newW > anchorRight) { newW = anchorRight; newH = newW / ratio; }
+                    if (newH > anchorBottom) { newH = anchorBottom; newW = newH * ratio; }
+                    manualCropState.boxW = newW;
+                    manualCropState.boxH = newH;
+                    manualCropState.boxX = anchorRight - newW;
+                    manualCropState.boxY = anchorBottom - newH;
+                    syncCropSizeSliderUI(Math.max(newW, newH));
                 } else if (manualCropState.dragMode === 'resize_tr') {
                     const delta = Math.max(dx, -dy);
                     const anchorLeft = manualCropState.startBoxX;
-                    const anchorBottom = manualCropState.startBoxY + manualCropState.startBoxSize;
-                    const maxAllowed = Math.min(1 - anchorLeft, anchorBottom);
-                    const newSize = Math.min(maxAllowed, Math.max(minSize, manualCropState.startBoxSize + delta));
-                    manualCropState.boxSize = newSize;
-                    manualCropState.boxY = anchorBottom - newSize;
-                    syncCropSizeSliderUI(newSize);
+                    const anchorBottom = manualCropState.startBoxY + manualCropState.startBoxH;
+                    let newW = Math.max(minScale, manualCropState.startBoxW + delta);
+                    let newH = newW / ratio;
+                    const maxW = 1 - anchorLeft;
+                    if (newW > maxW) { newW = maxW; newH = newW / ratio; }
+                    if (newH > anchorBottom) { newH = anchorBottom; newW = newH * ratio; }
+                    manualCropState.boxW = newW;
+                    manualCropState.boxH = newH;
+                    manualCropState.boxY = anchorBottom - newH;
+                    syncCropSizeSliderUI(Math.max(newW, newH));
                 } else if (manualCropState.dragMode === 'resize_bl') {
                     const delta = Math.max(-dx, dy);
-                    const anchorRight = manualCropState.startBoxX + manualCropState.startBoxSize;
+                    const anchorRight = manualCropState.startBoxX + manualCropState.startBoxW;
                     const anchorTop = manualCropState.startBoxY;
-                    const maxAllowed = Math.min(anchorRight, 1 - anchorTop);
-                    const newSize = Math.min(maxAllowed, Math.max(minSize, manualCropState.startBoxSize + delta));
-                    manualCropState.boxSize = newSize;
-                    manualCropState.boxX = anchorRight - newSize;
-                    syncCropSizeSliderUI(newSize);
+                    let newW = Math.max(minScale, manualCropState.startBoxW + delta);
+                    let newH = newW / ratio;
+                    const maxH = 1 - anchorTop;
+                    if (newW > anchorRight) { newW = anchorRight; newH = newW / ratio; }
+                    if (newH > maxH) { newH = maxH; newW = newH * ratio; }
+                    manualCropState.boxW = newW;
+                    manualCropState.boxH = newH;
+                    manualCropState.boxX = anchorRight - newW;
+                    syncCropSizeSliderUI(Math.max(newW, newH));
                 } else if (manualCropState.dragMode === 'pan_img') {
                     manualCropState.imgOffsetX = Math.min(0.85, Math.max(-0.85, manualCropState.startImgOffsetX + dx));
                     manualCropState.imgOffsetY = Math.min(0.85, Math.max(-0.85, manualCropState.startImgOffsetY + dy));
@@ -1602,7 +1721,7 @@
         }
 
         function syncCropSizeSliderUI(normSize) {
-            const pct = Math.round(normSize * 100);
+            const pct = Math.min(96, Math.max(35, Math.round(normSize * 100)));
             const slider = document.getElementById('crop-box-size-range');
             const label = document.getElementById('crop-box-size-label');
             if (slider) slider.value = String(pct);
@@ -1615,7 +1734,7 @@
                 return;
             }
 
-            // Render full virtual workspace at high resolution, then extract exact user-selected 1:1 box & compress
+            // Safely clamp crop region within valid canvas bounds to guarantee valid non-empty image output
             const virtualSize = 900;
             const virtualCanvas = document.createElement('canvas');
             virtualCanvas.width = virtualSize;
@@ -1632,20 +1751,35 @@
                 manualCropState.imgOffsetY
             );
 
-            const outputSize = 720;
+            const safeBoxX = Math.min(0.95, Math.max(0, manualCropState.boxX || 0));
+            const safeBoxY = Math.min(0.95, Math.max(0, manualCropState.boxY || 0));
+            const safeBoxW = Math.min(1 - safeBoxX, Math.max(0.05, manualCropState.boxW || 0.8));
+            const safeBoxH = Math.min(1 - safeBoxY, Math.max(0.05, manualCropState.boxH || 0.8));
+
+            const sx = Math.round(safeBoxX * virtualSize);
+            const sy = Math.round(safeBoxY * virtualSize);
+            const sW = Math.max(10, Math.round(safeBoxW * virtualSize));
+            const sH = Math.max(10, Math.round(safeBoxH * virtualSize));
+
+            const maxOutEdge = 800;
+            let outW, outH;
+            if (sW >= sH) {
+                outW = maxOutEdge;
+                outH = Math.max(10, Math.round((sH / sW) * maxOutEdge));
+            } else {
+                outH = maxOutEdge;
+                outW = Math.max(10, Math.round((sW / sH) * maxOutEdge));
+            }
+
             const outCanvas = document.createElement('canvas');
-            outCanvas.width = outputSize;
-            outCanvas.height = outputSize;
+            outCanvas.width = outW;
+            outCanvas.height = outH;
             const outCtx = outCanvas.getContext('2d');
             outCtx.fillStyle = '#FFFFFF';
-            outCtx.fillRect(0, 0, outputSize, outputSize);
+            outCtx.fillRect(0, 0, outW, outH);
+            outCtx.drawImage(virtualCanvas, sx, sy, sW, sH, 0, 0, outW, outH);
 
-            const sx = manualCropState.boxX * virtualSize;
-            const sy = manualCropState.boxY * virtualSize;
-            const sSize = manualCropState.boxSize * virtualSize;
-            outCtx.drawImage(virtualCanvas, sx, sy, sSize, sSize, 0, 0, outputSize, outputSize);
-
-            const croppedDataUrl = outCanvas.toDataURL('image/jpeg', 0.80);
+            const croppedDataUrl = outCanvas.toDataURL('image/jpeg', 0.82);
             const ctxType = currentCropperContext.type;
 
             currentCropperContext = null;
@@ -1739,19 +1873,19 @@
         // ==========================================
         // 2. INITIAL MOCK DATA & STATE MANAGEMENT
         // ==========================================
-        const STORAGE_KEY = 'ff_cozy_rent_store_data_v4';
-        const ADMIN_AUTH_SESSION_KEY = 'ff_cozy_rent_admin_logged_in_v4';
+        const STORAGE_KEY = 'aumaumsofia_store_data_v1';
+        const ADMIN_AUTH_SESSION_KEY = 'aumaumsofia_admin_logged_in_v1';
 
         const defaultStoreData = {
             adminAuth: {
-                email: 'admin@ffcozyrent.com',
+                email: 'admin@aumaumsofia.com',
                 password: 'admin1234'
             },
             storeSettings: {
                 logoImage: '',
-                siteTitle: 'FF Cozy Rent',
+                siteTitle: 'AUMAUMSOFIA',
                 siteSubtitle: 'บริการเช่ารหัส Free Fire ปลอดภัย 100%',
-                coverImage: createSampleSvg('#FFF4EF', '#FFE3D8', 'FF Cozy Rent Store', 'เช่ารหัส Free Fire สุดคิ้วท์ ปลอดภัย 100%', false),
+                coverImage: createSampleSvg('#FFF4EF', '#FFE3D8', 'AUMAUMSOFIA Store', 'เช่ารหัส Free Fire สุดคิ้วท์ ปลอดภัย 100%', false),
                 bannerTitle: 'ยินดีต้อนรับสู่ร้านปล่อยเช่ารหัส Free Fire',
                 bannerSubtitle: 'เลือกเช่าไอดีที่ถูกใจ สกินแรร์เพียบ พร้อมเล่นทันทีตลอด 24 ชม.',
                 bannerTag: '✨ ร้านเช่ารหัสเกมสุดคิ้วท์ ไว้ใจได้',
@@ -1880,14 +2014,14 @@
                 {
                     id: 'con-1',
                     name: 'Line Official',
-                    subtitle: '@ffcozyrent (ทักแชทเช่ารหัสได้ทันที)',
+                    subtitle: '@aumaumsofia (ทักแชทเช่ารหัสได้ทันที)',
                     url: 'https://line.me',
                     icon: createSampleSvg('#ECF7F0', '#55A87A', 'LINE', 'Official', true)
                 },
                 {
                     id: 'con-2',
                     name: 'Facebook Page',
-                    subtitle: 'FF Cozy Rent เช่ารหัส Free Fire',
+                    subtitle: 'AUMAUMSOFIA เช่ารหัส Free Fire',
                     url: 'https://facebook.com',
                     icon: createSampleSvg('#FFF4EF', '#FFA88C', 'FB', 'Page', true)
                 },
@@ -1905,7 +2039,7 @@
 
         function loadStoreData() {
             try {
-                const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('ff_cozy_rent_store_data_v3') || localStorage.getItem('ff_cozy_rent_store_data_v2');
+                const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('ff_cozy_rent_store_data_v4') || localStorage.getItem('ff_cozy_rent_store_data_v3');
                 if (saved) {
                     const parsed = JSON.parse(saved);
                     parsed.adminAuth = { ...defaultStoreData.adminAuth, ...(parsed.adminAuth || {}) };
@@ -2035,7 +2169,7 @@
             const emailInput = document.getElementById('admin-login-email').value.trim().toLowerCase();
             const passwordInput = document.getElementById('admin-login-password').value;
 
-            const validEmail = (storeData.adminAuth?.email || 'admin@ffcozyrent.com').trim().toLowerCase();
+            const validEmail = (storeData.adminAuth?.email || 'admin@aumaumsofia.com').trim().toLowerCase();
             const validPassword = storeData.adminAuth?.password || 'admin1234';
 
             if (emailInput === validEmail && passwordInput === validPassword) {
@@ -2414,7 +2548,7 @@
 
         function renderSiteHeaderBranding() {
             const logoUrl = storeData.storeSettings.logoImage || '';
-            const siteTitle = storeData.storeSettings.siteTitle || 'FF Cozy Rent';
+            const siteTitle = storeData.storeSettings.siteTitle || 'AUMAUMSOFIA';
             const siteSubtitle = storeData.storeSettings.siteSubtitle || 'บริการเช่ารหัส Free Fire ปลอดภัย 100%';
 
             const logoImg = document.getElementById('header-logo-img');
@@ -2480,12 +2614,14 @@
             }
             wrapper.classList.remove('hidden');
             container.innerHTML = storeData.highlights.map(hl => {
-                const count = (hl.images && hl.images.length > 0) ? hl.images.length : 1;
+                const validImgs = (hl.images && hl.images.length > 0) ? hl.images.filter(Boolean) : (hl.image ? [hl.image] : []);
+                const count = validImgs.length || 1;
+                const coverSrc = hl.image || validImgs[0] || createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true);
                 return `
                     <button type="button" onclick="openHighlightViewer('${escapeAttr(hl.id)}')" class="flex flex-col items-center gap-2 flex-shrink-0 w-20 sm:w-24 group cursor-pointer focus:outline-none">
                         <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-1 bg-gradient-to-tr from-peach-400 to-peach-200 shadow-sm group-hover:scale-105 transition-transform">
                             <div class="w-full h-full rounded-full bg-white p-0.5 overflow-hidden">
-                                <img src="${hl.image || createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true)}" alt="${escapeHtml(hl.title)}" class="w-full h-full rounded-full object-cover">
+                                <img src="${coverSrc}" alt="${escapeHtml(hl.title)}" onerror="this.src='${createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true)}'" class="w-full h-full rounded-full object-cover">
                             </div>
                             ${count > 1 ? `<span class="absolute -bottom-0.5 -right-0.5 px-1.5 py-0.5 rounded-full bg-cocoa-900 text-white text-[9px] font-bold shadow">${count}</span>` : ''}
                         </div>
@@ -2513,7 +2649,11 @@
         function renderHighlightViewerSlide() {
             const total = activeHighlightViewerImages.length;
             const currentImg = activeHighlightViewerImages[activeHighlightViewerIndex];
-            document.getElementById('hl-viewer-main-img').src = currentImg;
+            const mainImgEl = document.getElementById('hl-viewer-main-img');
+            mainImgEl.onerror = function() {
+                this.src = createSampleSvg('#FFF4EF', '#FFE3D8', '✨', 'Highlight', true);
+            };
+            mainImgEl.src = currentImg;
             document.getElementById('hl-viewer-counter').textContent = `รูปที่ ${activeHighlightViewerIndex + 1} / ${total}`;
 
             const prevBtn = document.getElementById('hl-viewer-prev');
@@ -2529,7 +2669,7 @@
             const thumbsContainer = document.getElementById('hl-viewer-thumbs');
             thumbsContainer.innerHTML = activeHighlightViewerImages.map((img, idx) => `
                 <button type="button" onclick="selectHighlightViewerSlide(${idx})"
-                    class="w-14 h-14 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition-all ${idx === activeHighlightViewerIndex ? 'border-peach-500 scale-105' : 'border-cream-200 opacity-70 hover:opacity-100'}">
+                    class="w-14 h-14 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition-all bg-cream-100 ${idx === activeHighlightViewerIndex ? 'border-peach-500 scale-105' : 'border-cream-200 opacity-70 hover:opacity-100'}">
                     <img src="${img}" class="w-full h-full object-cover">
                 </button>
             `).join('');
@@ -3008,7 +3148,7 @@
         function renderAllAdminViews() {
             renderAdminSiteHeaderUI();
 
-            document.getElementById('input-admin-email').value = storeData.adminAuth?.email || 'admin@ffcozyrent.com';
+            document.getElementById('input-admin-email').value = storeData.adminAuth?.email || 'admin@aumaumsofia.com';
             document.getElementById('input-admin-password').value = storeData.adminAuth?.password || 'admin1234';
 
             renderAdminStoreStatusUI();
@@ -3108,7 +3248,7 @@
                 previewImg.classList.add('hidden');
                 fallbackIcon.classList.remove('hidden');
             }
-            document.getElementById('input-site-title').value = storeData.storeSettings.siteTitle || 'FF Cozy Rent';
+            document.getElementById('input-site-title').value = storeData.storeSettings.siteTitle || 'AUMAUMSOFIA';
             document.getElementById('input-site-subtitle').value = storeData.storeSettings.siteSubtitle || 'บริการเช่ารหัส Free Fire ปลอดภัย 100%';
         }
 
@@ -3123,7 +3263,7 @@
         }
 
         function saveSiteHeaderSettings() {
-            storeData.storeSettings.siteTitle = document.getElementById('input-site-title').value.trim() || 'FF Cozy Rent';
+            storeData.storeSettings.siteTitle = document.getElementById('input-site-title').value.trim() || 'AUMAUMSOFIA';
             storeData.storeSettings.siteSubtitle = document.getElementById('input-site-subtitle').value.trim();
             if (persistStoreData()) {
                 renderSiteHeaderBranding();
@@ -3357,12 +3497,14 @@
                 return;
             }
             container.innerHTML = storeData.highlights.map(hl => {
-                const count = (hl.images && hl.images.length > 0) ? hl.images.length : 1;
+                const validImgs = (hl.images && hl.images.length > 0) ? hl.images.filter(Boolean) : (hl.image ? [hl.image] : []);
+                const count = validImgs.length || 1;
+                const coverSrc = hl.image || validImgs[0] || createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true);
                 return `
                     <div class="bg-cream-100 rounded-3xl p-4 border border-cream-200 flex flex-col items-center justify-between gap-3 text-center">
                         <div class="flex flex-col items-center gap-2">
                             <div class="relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-peach-400 to-peach-200">
-                                <img src="${hl.image || createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true)}" class="w-full h-full rounded-full object-cover bg-white">
+                                <img src="${coverSrc}" onerror="this.src='${createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true)}'" class="w-full h-full rounded-full object-cover bg-white">
                                 <span class="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-cocoa-900 text-white text-[9px] font-bold">${count} รูป</span>
                             </div>
                             <h4 class="font-bold text-xs sm:text-sm text-cocoa-900 line-clamp-1">${escapeHtml(hl.title)}</h4>
@@ -3386,7 +3528,7 @@
                 document.getElementById('hl-id').value = hl.id;
                 document.getElementById('hl-title').value = hl.title;
                 tempHighlightImg = hl.image || '';
-                tempHighlightGallery = Array.isArray(hl.images) ? [...hl.images] : (hl.image ? [hl.image] : []);
+                tempHighlightGallery = Array.isArray(hl.images) ? hl.images.filter(Boolean) : (hl.image ? [hl.image] : []);
             } else {
                 document.getElementById('modal-highlight-title').textContent = 'เพิ่มไฮไลท์ใหม่';
                 document.getElementById('hl-id').value = '';
@@ -3420,9 +3562,9 @@
             }
 
             const galleryContainer = document.getElementById('hl-gallery-previews');
-            galleryContainer.innerHTML = tempHighlightGallery.map((img, idx) => `
-                <div class="relative rounded-2xl overflow-hidden border border-cream-200 aspect-square bg-cream-100">
-                    <img src="${img}" class="w-full h-full object-cover">
+            galleryContainer.innerHTML = tempHighlightGallery.filter(Boolean).map((img, idx) => `
+                <div class="relative rounded-2xl overflow-hidden border border-cream-200 aspect-square bg-cream-100 flex items-center justify-center">
+                    <img src="${img}" class="w-full h-full object-contain">
                     <button type="button" onclick="removeTempHighlightGalleryImage(${idx})" class="absolute top-1 right-1 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow">×</button>
                 </div>
             `).join('');
@@ -3430,14 +3572,15 @@
 
         function saveHighlightForm(event) {
             event.preventDefault();
-            if (!tempHighlightImg && tempHighlightGallery.length > 0) tempHighlightImg = tempHighlightGallery[0];
+            const validGallery = tempHighlightGallery.filter(Boolean);
+            if (!tempHighlightImg && validGallery.length > 0) tempHighlightImg = validGallery[0];
             if (!tempHighlightImg) {
                 showToast('กรุณาเลือกรูปภาพไฮไลท์', 'error');
                 return;
             }
             const id = document.getElementById('hl-id').value;
             const title = document.getElementById('hl-title').value.trim();
-            const finalImages = tempHighlightGallery.length > 0 ? [...tempHighlightGallery] : [tempHighlightImg];
+            const finalImages = validGallery.length > 0 ? [...validGallery] : [tempHighlightImg];
             const prevHighlights = JSON.parse(JSON.stringify(storeData.highlights));
 
             if (id) {
@@ -3826,31 +3969,32 @@
 
         function renderAdminReviews() {
             const container = document.getElementById('admin-reviews-list');
-            if (storeData.reviews.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-cocoa-600">ยังไม่มีรายการรีวิว กดปุ่ม "+ เพิ่มรีวิวใหม่" เพื่อเริ่มต้น</div>`;
+            if (!storeData.reviews || storeData.reviews.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-cocoa-600">ยังไม่มีรายการรีวิว</div>`;
                 return;
             }
-            container.innerHTML = storeData.reviews.map(rev => {
-                const hasImg = rev.image && rev.image.trim() !== '';
-                const hasText = rev.text && rev.text.trim() !== '';
-                const starsHtml = generateStarString(rev.rating || 5);
-                return `
-                    <div class="bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between gap-3">
-                        <div class="space-y-2">
-                            ${hasImg ? `<img src="${rev.image}" class="w-full aspect-square rounded-2xl object-cover border border-cream-200">` : ''}
-                            <div class="flex items-center justify-between gap-2">
-                                <h4 class="font-bold text-sm text-cocoa-900 truncate">${escapeHtml(rev.author)}</h4>
-                                <span class="text-xs text-amber-400 flex-shrink-0">${starsHtml}</span>
-                            </div>
-                            ${hasText ? `<p class="text-xs text-cocoa-600 line-clamp-3">"${escapeHtml(rev.text)}"</p>` : ''}
+            container.innerHTML = storeData.reviews.map(rev => `
+                <div class="bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between gap-3">
+                    <div class="space-y-2">
+                        ${rev.image ? `<img src="${rev.image}" class="w-full aspect-square object-cover rounded-2xl border border-cream-200">` : ''}
+                        <div class="flex items-center justify-between gap-2">
+                            <h4 class="font-bold text-sm text-cocoa-900 truncate">${escapeHtml(rev.author)}</h4>
+                            <span class="text-xs text-amber-400 flex-shrink-0">${generateStarString(rev.rating || 5)}</span>
                         </div>
-                        <div class="flex justify-end gap-2 pt-2 border-t border-cream-200/80">
-                            <button type="button" onclick="openReviewModal('${escapeAttr(rev.id)}')" class="px-3.5 py-1.5 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100">แก้ไข</button>
-                            <button type="button" onclick="deleteReview('${escapeAttr(rev.id)}')" class="px-3.5 py-1.5 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100">ลบ</button>
-                        </div>
+                        ${rev.text ? `<p class="text-xs text-cocoa-600 line-clamp-3">"${escapeHtml(rev.text)}"</p>` : ''}
                     </div>
-                `;
-            }).join('');
+                    <div class="flex justify-end gap-2 pt-2 border-t border-cream-200">
+                        <button type="button" onclick="openReviewModal('${escapeAttr(rev.id)}')" class="px-3.5 py-1 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100">แก้ไข</button>
+                        <button type="button" onclick="deleteReview('${escapeAttr(rev.id)}')" class="px-3.5 py-1 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100">ลบ</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearAdminReviewImage() {
+            tempReviewImg = '';
+            document.getElementById('rev-img-file').value = '';
+            document.getElementById('rev-preview-box').classList.add('hidden');
         }
 
         function openReviewModal(id = null) {
@@ -3858,7 +4002,7 @@
             if (id) {
                 const rev = storeData.reviews.find(r => r.id === id);
                 if (!rev) return;
-                document.getElementById('modal-review-title').textContent = 'แก้ไขรีวิว';
+                document.getElementById('modal-review-title').textContent = 'แก้ไขรีวิวลูกค้า';
                 document.getElementById('rev-id').value = rev.id;
                 document.getElementById('rev-author').value = rev.author;
                 document.getElementById('rev-text').value = rev.text || '';
@@ -3872,21 +4016,15 @@
                 renderStarSelector('admin-rev-stars-selector', 'rev-rating', 5);
                 tempReviewImg = '';
             }
-            const box = document.getElementById('rev-preview-box');
+
             if (tempReviewImg) {
                 document.getElementById('rev-preview').src = tempReviewImg;
-                box.classList.remove('hidden');
+                document.getElementById('rev-preview-box').classList.remove('hidden');
             } else {
-                box.classList.add('hidden');
+                document.getElementById('rev-preview-box').classList.add('hidden');
             }
             document.getElementById('modal-admin-review').classList.remove('hidden');
             lucide.createIcons();
-        }
-
-        function clearAdminReviewImage() {
-            tempReviewImg = '';
-            document.getElementById('rev-img-file').value = '';
-            document.getElementById('rev-preview-box').classList.add('hidden');
         }
 
         function saveReviewForm(event) {
@@ -3896,22 +4034,21 @@
             const text = document.getElementById('rev-text').value.trim();
             const rating = Math.min(5, Math.max(1, parseInt(document.getElementById('rev-rating').value, 10) || 5));
 
-            if (!author) {
-                showToast('กรุณากรอกชื่อลูกค้า', 'error');
-                return;
-            }
             if (!text && !tempReviewImg) {
-                showToast('กรุณากรอกข้อความรีวิวหรือเลือกรูปภาพอย่างน้อยหนึ่งอย่าง', 'error');
+                showToast('กรุณาเลือกรูปภาพหรือกรอกข้อความรีวิวอย่างน้อยหนึ่งอย่าง', 'error');
                 return;
             }
 
             const prevReviews = JSON.parse(JSON.stringify(storeData.reviews));
+            const revObj = { id: id || 'rev-' + Date.now(), author, rating, text, image: tempReviewImg };
+
             if (id) {
                 const idx = storeData.reviews.findIndex(r => r.id === id);
-                if (idx !== -1) storeData.reviews[idx] = { id, author, rating, text, image: tempReviewImg };
+                if (idx !== -1) storeData.reviews[idx] = revObj;
             } else {
-                storeData.reviews.unshift({ id: 'rev-' + Date.now(), author, rating, text, image: tempReviewImg });
+                storeData.reviews.unshift(revObj);
             }
+
             if (persistStoreData()) {
                 closeModal('modal-admin-review');
                 renderAdminReviews();
@@ -3936,8 +4073,8 @@
 
         function renderAdminContacts() {
             const container = document.getElementById('admin-contacts-list');
-            if (storeData.contacts.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-cocoa-600">ยังไม่มีช่องทางติดต่อ กดปุ่ม "+ เพิ่มช่องทางติดต่อ" เพื่อเริ่มต้น</div>`;
+            if (!storeData.contacts || storeData.contacts.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-cocoa-600">ยังไม่มีช่องทางการติดต่อ</div>`;
                 return;
             }
             container.innerHTML = storeData.contacts.map(con => `
@@ -3946,13 +4083,13 @@
                         <img src="${con.icon}" class="w-12 h-12 rounded-full object-cover border border-cream-200 flex-shrink-0">
                         <div class="min-w-0">
                             <h4 class="font-bold text-sm text-cocoa-900 truncate">${escapeHtml(con.name)}</h4>
-                            <p class="text-xs text-cocoa-600 truncate">${escapeHtml(con.subtitle || '')}</p>
+                            <p class="text-xs text-cocoa-600 truncate">${escapeHtml(con.subtitle)}</p>
                             <p class="text-[11px] text-peach-500 truncate mt-0.5">${escapeHtml(con.url)}</p>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 pt-2 border-t border-cream-200/80">
-                        <button type="button" onclick="openContactModal('${escapeAttr(con.id)}')" class="px-3.5 py-1.5 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100">แก้ไข</button>
-                        <button type="button" onclick="deleteContact('${escapeAttr(con.id)}')" class="px-3.5 py-1.5 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100">ลบ</button>
+                    <div class="flex justify-end gap-2 pt-2 border-t border-cream-200">
+                        <button type="button" onclick="openContactModal('${escapeAttr(con.id)}')" class="px-3.5 py-1 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100">แก้ไข</button>
+                        <button type="button" onclick="deleteContact('${escapeAttr(con.id)}')" class="px-3.5 py-1 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100">ลบ</button>
                     </div>
                 </div>
             `).join('');
@@ -3977,12 +4114,12 @@
                 document.getElementById('con-url').value = '';
                 tempContactIcon = '';
             }
-            const box = document.getElementById('con-preview-box');
+
             if (tempContactIcon) {
                 document.getElementById('con-preview').src = tempContactIcon;
-                box.classList.remove('hidden');
+                document.getElementById('con-preview-box').classList.remove('hidden');
             } else {
-                box.classList.add('hidden');
+                document.getElementById('con-preview-box').classList.add('hidden');
             }
             document.getElementById('modal-admin-contact').classList.remove('hidden');
             lucide.createIcons();
@@ -3994,24 +4131,30 @@
                 showToast('กรุณาเลือกรูปไอคอนช่องทางติดต่อ', 'error');
                 return;
             }
+
             const prevContacts = JSON.parse(JSON.stringify(storeData.contacts));
             const id = document.getElementById('con-id').value;
-            const name = document.getElementById('con-name').value.trim();
-            const subtitle = document.getElementById('con-sub').value.trim();
-            const url = document.getElementById('con-url').value.trim();
+            const conObj = {
+                id: id || 'con-' + Date.now(),
+                name: document.getElementById('con-name').value.trim(),
+                subtitle: document.getElementById('con-sub').value.trim(),
+                url: document.getElementById('con-url').value.trim(),
+                icon: tempContactIcon
+            };
 
             if (id) {
                 const idx = storeData.contacts.findIndex(c => c.id === id);
-                if (idx !== -1) storeData.contacts[idx] = { id, name, subtitle, url, icon: tempContactIcon };
+                if (idx !== -1) storeData.contacts[idx] = conObj;
             } else {
-                storeData.contacts.push({ id: 'con-' + Date.now(), name, subtitle, url, icon: tempContactIcon });
+                storeData.contacts.push(conObj);
             }
+
             if (persistStoreData()) {
                 closeModal('modal-admin-contact');
                 renderAdminContacts();
                 renderStoreContacts();
                 lucide.createIcons();
-                showToast('บันทึกช่องทางติดต่อเรียบร้อยแล้ว');
+                showToast('บันทึกช่องทางการติดต่อเรียบร้อยแล้ว');
             } else {
                 storeData.contacts = prevContacts;
             }
@@ -4028,14 +4171,9 @@
             });
         }
 
-        function sanitizeUrl(url) {
-            if (!url) return '#';
-            const trimmed = String(url).trim();
-            if (/^(https?:\/\/|mailto:|tel:|line:\/\/)/i.test(trimmed)) return trimmed;
-            if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return 'https://' + trimmed;
-            return '#';
-        }
-
+        // ==========================================
+        // 6. SECURITY & ESCAPING UTILITIES
+        // ==========================================
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
             return String(str)
@@ -4047,37 +4185,25 @@
         }
 
         function escapeAttr(str) {
-            return escapeHtml(str).replace(/\\/g, '\\\\');
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                const orderedModals = [
-                    'modal-image-cropper',
-                    'modal-confirm',
-                    'modal-admin-custom-block',
-                    'modal-account-detail',
-                    'modal-highlight-viewer',
-                    'modal-customer-review',
-                    'modal-admin-account',
-                    'modal-admin-highlight',
-                    'modal-admin-review',
-                    'modal-admin-contact'
-                ];
-                for (const id of orderedModals) {
-                    const el = document.getElementById(id);
-                    if (el && !el.classList.contains('hidden')) {
-                        closeModal(id);
-                        break;
-                    }
-                }
-            }
-        });
+        function sanitizeUrl(url) {
+            if (!url) return '#';
+            const trimmed = url.trim();
+            if (/^https?:\/\//i.test(trimmed)) return trimmed;
+            return 'https://' + trimmed;
+        }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        // ==========================================
+        // INITIALIZE APP ON LOAD
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
             initManualCropperInteractions();
             renderAllStorefrontViews();
             initAutoplayAndLifecycleMusic();
+            lucide.createIcons();
         });
     </script>
 </body>
