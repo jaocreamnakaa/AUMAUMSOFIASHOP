@@ -1035,11 +1035,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-cocoa-800 mb-1">ชื่อของคุณ / ฉายา *</label>
-                    <input type="text" id="cust-rev-author" required placeholder="เช่น น้องมินท์ (เช่าไอดี A01)" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400">
+                    <input type="text" id="cust-rev-author" required maxlength="80" placeholder="เช่น น้องมินท์ (เช่าไอดี A01)" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-cocoa-800 mb-1">ข้อความรีวิว</label>
-                    <textarea id="cust-rev-text" rows="3" placeholder="ความประทับใจในการเช่ารหัสกับร้านเรา..." class="w-full px-4 py-2.5 rounded-2xl bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400"></textarea>
+                    <textarea id="cust-rev-text" rows="3" maxlength="500" placeholder="ความประทับใจในการเช่ารหัสกับร้านเรา..." class="w-full px-4 py-2.5 rounded-2xl bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400"></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-cocoa-800 mb-1">รูปภาพประกอบรีวิว (ถ้ามี)</label>
@@ -1215,11 +1215,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-cocoa-800 mb-1">ชื่อลูกค้า / หัวข้อรีวิว *</label>
-                    <input type="text" id="rev-author" required placeholder="เช่น คุณน้องมินท์ (เช่าไอดี A01)" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400">
+                    <input type="text" id="rev-author" required maxlength="80" placeholder="เช่น คุณน้องมินท์ (เช่าไอดี A01)" class="w-full px-4 py-2.5 rounded-full bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-cocoa-800 mb-1">ข้อความรีวิว</label>
-                    <textarea id="rev-text" rows="3" placeholder="ข้อความรีวิวจากลูกค้า..." class="w-full px-4 py-2.5 rounded-2xl bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400"></textarea>
+                    <textarea id="rev-text" rows="3" maxlength="500" placeholder="ข้อความรีวิวจากลูกค้า..." class="w-full px-4 py-2.5 rounded-2xl bg-cream-100 border border-cream-200 text-sm focus:outline-none focus:border-peach-400"></textarea>
                 </div>
                 <p class="text-[11px] text-cocoa-600">สามารถเลือกใส่เฉพาะรูป เฉพาะข้อความ หรือใส่ทั้งคู่ได้</p>
                 <div class="flex justify-end gap-2 pt-2">
@@ -1292,9 +1292,13 @@
         // 0. SUPABASE CLIENT & STORAGE CONFIGURATION
         // ==========================================
         const SUPABASE_URL = 'https://arxwoizkidavdfimhxxq.supabase.co';
-        // กรุณาใส่ Publishable key หรือ anon key จริงจากโปรเจกต์ Supabase (Project Settings > API Keys)
+        // Publishable / anon key สำหรับใช้งานฝั่ง Client คู่กับ RLS
         const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeHdvaXpraWRhdmRmaW1oeHhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNjI5OTcsImV4cCI6MjExMDYzODk5N30.I5EQwrHxrV0X_MILMvosZ2xel_2XOUdSjax3ZGDqfVY';
         const STORAGE_BUCKET = 'store-media';
+        const MAX_IMAGE_FILE_BYTES = 8 * 1024 * 1024;
+        const MAX_AUDIO_FILE_BYTES = 15 * 1024 * 1024;
+        const ALLOWED_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+        const ALLOWED_AUDIO_MIMES = new Set(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm']);
 
         let supabaseClient = null;
 
@@ -1316,13 +1320,22 @@
             return null;
         }
 
+        function isSafeMediaUrlOrData(url) {
+            if (!url || typeof url !== 'string') return false;
+            const trimmed = url.trim();
+            if (/^https:\/\//i.test(trimmed) || /^http:\/\//i.test(trimmed)) return true;
+            if (/^data:image\/(jpeg|png|webp|gif);base64,[a-zA-Z0-9+/=]+$/i.test(trimmed)) return true;
+            return false;
+        }
+
         async function uploadBlobToStoreBucket(blobOrFile, folderName = 'images', ext = 'jpg', contentType = 'image/jpeg') {
             const client = getSupabaseClient();
             if (!client || !client.storage || !blobOrFile) {
                 return null;
             }
             const safeFolder = String(folderName || 'images').replace(/[^a-zA-Z0-9_-]/g, '');
-            const filePath = `${safeFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+            const safeExt = String(ext || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'jpg';
+            const filePath = `${safeFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
 
             const { error: uploadError } = await client.storage
                 .from(STORAGE_BUCKET)
@@ -1584,16 +1597,23 @@
             const inputEl = event.target;
             if (!files || files.length === 0) return;
 
-            const validFiles = Array.from(files).filter(f => f && f.type && f.type.startsWith('image/'));
+            const rawList = Array.from(files);
             inputEl.value = '';
 
+            const oversized = rawList.some(f => f && typeof f.size === 'number' && f.size > MAX_IMAGE_FILE_BYTES);
+            if (oversized) {
+                showToast('ขนาดไฟล์รูปภาพต้องไม่เกิน 8 MB ต่อไฟล์', 'error');
+                return;
+            }
+
+            const validFiles = rawList.filter(f => f && f.type && ALLOWED_IMAGE_MIMES.has(f.type.toLowerCase()));
             if (validFiles.length === 0) {
-                showToast('กรุณาเลือกไฟล์รูปภาพที่รองรับ (JPG, PNG, WEBP)', 'error');
+                showToast('กรุณาเลือกไฟล์รูปภาพที่รองรับ (JPG, PNG, WEBP, GIF)', 'error');
                 return;
             }
 
             if (contextType === 'account_extra' || contextType === 'highlight_gallery') {
-                queuedExtraFiles = validFiles;
+                queuedExtraFiles = validFiles.slice(0, 10);
                 extraFileQueueIndex = 0;
                 processNextExtraFileCrop(contextType);
                 return;
@@ -1968,7 +1988,14 @@
                     account_extra: 'accounts'
                 };
                 const targetFolder = folderMap[ctxType] || 'images';
-                const storedImageUrl = await uploadCroppedDataUrlToStorage(croppedDataUrl, targetFolder);
+
+                let storedImageUrl = croppedDataUrl;
+                if (ctxType === 'customer_review') {
+                    // ผู้เยี่ยมชมทั่วไปอัปโหลดได้เฉพาะผ่านตาราง reviews โดยใช้ URL สาธารณะหรือ DataURL ที่ปลอดภัย
+                    storedImageUrl = croppedDataUrl;
+                } else if (appState.isAdminVerified) {
+                    storedImageUrl = await uploadCroppedDataUrlToStorage(croppedDataUrl, targetFolder);
+                }
 
                 currentCropperContext = null;
                 cropperSourceImageObj = null;
@@ -2126,10 +2153,10 @@
         function mapStoreSettingsRow(row) {
             const r = row || {};
             storeData.storeSettings = {
-                logoImage: r.logo_image || '',
+                logoImage: isSafeMediaUrlOrData(r.logo_image) ? r.logo_image : '',
                 siteTitle: r.site_title || 'AUMAUMSOFIA',
                 siteSubtitle: r.site_subtitle || 'บริการเช่ารหัส Free Fire ปลอดภัย 100%',
-                coverImage: r.cover_image || '',
+                coverImage: isSafeMediaUrlOrData(r.cover_image) ? r.cover_image : '',
                 bannerTitle: r.banner_title || 'ยินดีต้อนรับสู่ร้านปล่อยเช่ารหัส Free Fire',
                 bannerSubtitle: r.banner_subtitle || 'เลือกเช่าไอดีที่ถูกใจ สกินแรร์เพียบ พร้อมเล่นทันทีตลอด 24 ชม.',
                 bannerTag: r.banner_tag || '✨ ร้านเช่ารหัสเกมสุดคิ้วท์ ไว้ใจได้',
@@ -2150,7 +2177,7 @@
                 title: r.important_title || 'ข้อมูลสำคัญ & ประกาศจากร้าน',
                 mode: r.important_mode || 'both',
                 text: r.important_text || '',
-                image: r.important_image || ''
+                image: isSafeMediaUrlOrData(r.important_image) ? r.important_image : ''
             };
 
             storeData.rulesSettings = {
@@ -2158,7 +2185,7 @@
                 title: r.rules_title || 'กฎการเช่า & ข้อตกลง',
                 mode: r.rules_mode || 'both',
                 text: r.rules_text || '',
-                image: r.rules_image || ''
+                image: isSafeMediaUrlOrData(r.rules_image) ? r.rules_image : ''
             };
         }
 
@@ -2201,7 +2228,7 @@
         async function saveStoreSettingsToSupabase() {
             const client = getSupabaseClient();
             if (!client) {
-                showToast('กรุณาตั้งค่า Project URL และ Publishable Key ของ Supabase ให้ถูกต้อง', 'error');
+                showToast('ไม่สามารถเชื่อมต่อระบบฐานข้อมูลได้ในขณะนี้', 'error');
                 return false;
             }
             if (!appState.isAdminVerified) {
@@ -2217,7 +2244,7 @@
                 return true;
             } catch (err) {
                 console.error('saveStoreSettingsToSupabase error:', err);
-                showToast('เกิดข้อผิดพลาดในการบันทึกการตั้งค่าร้าน: ' + (err && err.message ? err.message : ''), 'error');
+                showToast('เกิดข้อผิดพลาดในการบันทึกการตั้งค่าร้าน กรุณาลองใหม่อีกครั้ง', 'error');
                 return false;
             }
         }
@@ -2226,7 +2253,7 @@
             const client = getSupabaseClient();
             if (!client) {
                 appState.isLoadingStore = false;
-                appState.storeError = 'ไม่พบการเชื่อมต่อ Supabase กรุณาตรวจสอบการตั้งค่า URL และ Key';
+                appState.storeError = 'ไม่สามารถเชื่อมต่อระบบฐานข้อมูลได้ในขณะนี้';
                 renderAllStorefrontViews();
                 return;
             }
@@ -2270,13 +2297,15 @@
                     subtitle: row.subtitle || '',
                     mode: row.mode || 'both',
                     text: row.content_text || '',
-                    image: row.image_url || '',
+                    image: isSafeMediaUrlOrData(row.image_url) ? row.image_url : '',
                     sortOrder: row.sort_order ?? 0
                 }));
 
                 storeData.highlights = (highlightsRes.data || []).map(row => {
-                    const gallery = Array.isArray(row.gallery_images) ? row.gallery_images.filter(Boolean) : [];
-                    const cover = row.cover_image || gallery[0] || '';
+                    const gallery = Array.isArray(row.gallery_images)
+                        ? row.gallery_images.filter(u => isSafeMediaUrlOrData(u))
+                        : [];
+                    const cover = isSafeMediaUrlOrData(row.cover_image) ? row.cover_image : (gallery[0] || '');
                     return {
                         id: row.id,
                         title: row.title || '',
@@ -2301,8 +2330,8 @@
                         categoryId: row.category_id || null,
                         category: resolvedCategory,
                         status: row.status === 'rented' ? 'rented' : 'available',
-                        coverImage: row.cover_image || '',
-                        extraImages: Array.isArray(row.extra_images) ? row.extra_images.filter(Boolean) : [],
+                        coverImage: isSafeMediaUrlOrData(row.cover_image) ? row.cover_image : '',
+                        extraImages: Array.isArray(row.extra_images) ? row.extra_images.filter(u => isSafeMediaUrlOrData(u)) : [],
                         outfitsCount: row.outfits_count || '',
                         gunsCount: row.guns_count || '',
                         rareSkins: row.rare_skins || '',
@@ -2318,7 +2347,7 @@
                     author: row.author || '',
                     rating: Math.min(5, Math.max(1, parseInt(row.rating, 10) || 5)),
                     text: row.review_text || '',
-                    image: row.image_url || ''
+                    image: isSafeMediaUrlOrData(row.image_url) ? row.image_url : ''
                 }));
 
                 storeData.contacts = (contactsRes.data || []).map(row => ({
@@ -2326,7 +2355,7 @@
                     name: row.name || '',
                     subtitle: row.subtitle || '',
                     url: row.url || '#',
-                    icon: row.icon_url || '',
+                    icon: isSafeMediaUrlOrData(row.icon_url) ? row.icon_url : '',
                     sortOrder: row.sort_order ?? 0
                 }));
 
@@ -2335,7 +2364,7 @@
             } catch (err) {
                 console.error('Failed loading data from Supabase:', err);
                 appState.isLoadingStore = false;
-                appState.storeError = 'เกิดข้อผิดพลาดในการโหลดข้อมูลจากฐานข้อมูล: ' + (err && err.message ? err.message : '');
+                appState.storeError = 'ไม่สามารถโหลดข้อมูลร้านค้าได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง';
             }
 
             renderAllStorefrontViews();
@@ -2399,7 +2428,7 @@
             if (!client || !client.auth) {
                 appState.currentUser = null;
                 appState.isAdminVerified = false;
-                appState.adminDeniedReason = 'ไม่พบการเชื่อมต่อ Supabase Auth';
+                appState.adminDeniedReason = 'ไม่พบระบบตรวจสอบสิทธิ์';
                 updateAdminAuthView();
                 return false;
             }
@@ -2428,11 +2457,11 @@
                 appState.isAdminVerified = isAdminResult === true;
                 appState.adminDeniedReason = appState.isAdminVerified
                     ? ''
-                    : 'บัญชีนี้ไม่ได้รับสิทธิ์แอดมิน (is_admin = false)';
+                    : 'บัญชีนี้ไม่มีสิทธิ์แอดมิน';
             } catch (err) {
                 console.error('verifyAdminSessionAndRole error:', err);
                 appState.isAdminVerified = false;
-                appState.adminDeniedReason = 'ตรวจสอบสิทธิ์แอดมินไม่สำเร็จ: ' + (err && err.message ? err.message : '');
+                appState.adminDeniedReason = 'ไม่สามารถตรวจสอบสิทธิ์แอดมินได้ในขณะนี้';
             } finally {
                 appState.isCheckingAdmin = false;
             }
@@ -2478,7 +2507,7 @@
             event.preventDefault();
             const client = getSupabaseClient();
             if (!client || !client.auth) {
-                showToast('ไม่พบการเชื่อมต่อ Supabase Auth กรุณาตรวจสอบการตั้งค่า', 'error');
+                showToast('ไม่สามารถเชื่อมต่อระบบเข้าสู่ระบบได้ในขณะนี้', 'error');
                 return;
             }
 
@@ -2510,8 +2539,7 @@
                     }
                 } catch (err) {
                     console.error('Admin login error:', err);
-                    const detail = (err && err.message) ? err.message : 'เกิดข้อผิดพลาดในการเรียกใช้ระบบเข้าสู่ระบบ';
-                    showToast('เข้าสู่ระบบไม่สำเร็จ: ' + detail, 'error');
+                    showToast('อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือไม่สามารถเข้าสู่ระบบได้', 'error');
                 }
             });
         }
@@ -2562,10 +2590,10 @@
                     if (error) throw error;
                     if (data?.user) appState.currentUser = data.user;
                     document.getElementById('input-admin-password').value = '';
-                    showToast('อัปเดตข้อมูลบัญชีแอดมินใน Supabase Auth เรียบร้อยแล้ว');
+                    showToast('อัปเดตข้อมูลบัญชีแอดมินเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveAdminCredentials error:', err);
-                    showToast('อัปเดตข้อมูลล็อกอินไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    showToast('อัปเดตข้อมูลล็อกอินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
@@ -2617,7 +2645,7 @@
         function parseUniversalMusicSource(rawUrl) {
             if (!rawUrl || !rawUrl.trim()) return { type: 'none', url: '' };
             const url = rawUrl.trim();
-            if (url.startsWith('data:audio') || /\.(mp3|wav|ogg|m4a|aac|flac|webm)(\?.*)?$/i.test(url)) {
+            if (/^data:audio\//i.test(url) || /\.(mp3|wav|ogg|m4a|aac|flac|webm)(\?.*)?$/i.test(url)) {
                 return { type: 'audio', url };
             }
             const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/i) || url.match(/drive\.google\.com\/open\?id=([^&]+)/i);
@@ -2640,7 +2668,10 @@
             if (ttMatch && ttMatch[1]) {
                 return { type: 'iframe', url: `https://www.tiktok.com/embed/v2/${ttMatch[1]}?autoplay=1` };
             }
-            return { type: 'universal', url };
+            if (/^https:\/\//i.test(url)) {
+                return { type: 'universal', url };
+            }
+            return { type: 'none', url: '' };
         }
 
         function startAmbientChimeFallback() {
@@ -2937,7 +2968,7 @@
 
             const logoImg = document.getElementById('header-logo-img');
             const logoFallback = document.getElementById('header-logo-fallback');
-            if (logoUrl) {
+            if (logoUrl && isSafeMediaUrlOrData(logoUrl)) {
                 logoImg.src = logoUrl;
                 logoImg.classList.remove('hidden');
                 logoFallback.classList.add('hidden');
@@ -3014,7 +3045,7 @@
             const coverImg = document.getElementById('store-cover-img');
             const fallbackCover = createSampleSvg('#FFF4EF', '#FFE3D8', st.siteTitle || 'AUMAUMSOFIA', 'Store Cover', false);
             coverImg.onerror = function() { this.src = fallbackCover; };
-            coverImg.src = st.coverImage || fallbackCover;
+            coverImg.src = (st.coverImage && isSafeMediaUrlOrData(st.coverImage)) ? st.coverImage : fallbackCover;
 
             setSafeText(document.getElementById('store-banner-title'), st.bannerTitle || 'ยินดีต้อนรับสู่ร้านปล่อยเช่ารหัส Free Fire');
             setSafeText(document.getElementById('store-banner-subtitle'), st.bannerSubtitle || 'เลือกเช่าไอดีที่ถูกใจ สกินแรร์เพียบ พร้อมเล่นทันทีตลอด 24 ชม.');
@@ -3042,7 +3073,7 @@
 
             if (appState.storeError) {
                 wrapper.classList.remove('hidden');
-                renderStatusBox(container, 'error', 'เกิดข้อผิดพลาดในการโหลดไฮไลท์', appState.storeError, loadAllStoreDataFromSupabase);
+                renderStatusBox(container, 'error', 'ไม่สามารถโหลดไฮไลท์ได้', appState.storeError, loadAllStoreDataFromSupabase);
                 return;
             }
 
@@ -3056,9 +3087,9 @@
             container.replaceChildren();
 
             storeData.highlights.forEach(hl => {
-                const validImgs = (hl.images && hl.images.length > 0) ? hl.images.filter(Boolean) : (hl.image ? [hl.image] : []);
+                const validImgs = (hl.images && hl.images.length > 0) ? hl.images.filter(u => isSafeMediaUrlOrData(u)) : (isSafeMediaUrlOrData(hl.image) ? [hl.image] : []);
                 const count = validImgs.length || 1;
-                const coverSrc = hl.image || validImgs[0] || createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true);
+                const coverSrc = isSafeMediaUrlOrData(hl.image) ? hl.image : (validImgs[0] || createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true));
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -3101,11 +3132,11 @@
             const hl = storeData.highlights.find(h => h.id === hlId);
             if (!hl) return;
             const imgs = (hl.images && hl.images.length > 0) ? hl.images : [hl.image];
-            activeHighlightViewerImages = imgs.filter(Boolean);
+            activeHighlightViewerImages = imgs.filter(u => isSafeMediaUrlOrData(u));
             if (activeHighlightViewerImages.length === 0) return;
 
             activeHighlightViewerIndex = 0;
-            document.getElementById('hl-viewer-thumb').src = hl.image || activeHighlightViewerImages[0];
+            document.getElementById('hl-viewer-thumb').src = isSafeMediaUrlOrData(hl.image) ? hl.image : activeHighlightViewerImages[0];
             setSafeText(document.getElementById('hl-viewer-title'), hl.title || 'ไฮไลท์');
             renderHighlightViewerSlide();
             document.getElementById('modal-highlight-viewer').classList.remove('hidden');
@@ -3165,7 +3196,7 @@
             targetEl.replaceChildren();
 
             const showText = (mode === 'text' || mode === 'both') && text && text.trim() !== '';
-            const showImage = (mode === 'image' || mode === 'both') && image && image.trim() !== '';
+            const showImage = (mode === 'image' || mode === 'both') && image && isSafeMediaUrlOrData(image);
 
             if (!showText && !showImage) return false;
 
@@ -3354,7 +3385,7 @@
             }
 
             if (appState.storeError) {
-                renderStatusBox(container, 'error', 'เกิดข้อผิดพลาดในการโหลดรายการรหัส', appState.storeError, loadAllStoreDataFromSupabase);
+                renderStatusBox(container, 'error', 'ไม่สามารถโหลดรายการรหัสได้', appState.storeError, loadAllStoreDataFromSupabase);
                 return;
             }
 
@@ -3376,7 +3407,7 @@
                 const extraCount = acc.extraImages ? acc.extraImages.length : 0;
                 const safeLink = sanitizeUrl(acc.rentLink);
                 const accCode = acc.code || `A${String(idx + 1).padStart(2, '0')}`;
-                const coverSrc = (acc.coverImage && acc.coverImage.trim() !== '')
+                const coverSrc = (acc.coverImage && isSafeMediaUrlOrData(acc.coverImage))
                     ? acc.coverImage
                     : createSampleSvg('#FFF4EF', '#FFE3D8', `รหัส ${accCode}`, acc.category, true);
 
@@ -3598,7 +3629,7 @@
             const isAvailable = acc.status === 'available';
             const safeLink = sanitizeUrl(acc.rentLink);
             const accCode = acc.code || 'A01';
-            activeAccountDetailImages = [acc.coverImage, ...(acc.extraImages || [])].filter(Boolean);
+            activeAccountDetailImages = [acc.coverImage, ...(acc.extraImages || [])].filter(u => isSafeMediaUrlOrData(u));
 
             const container = document.getElementById('account-detail-content');
             container.replaceChildren();
@@ -3649,7 +3680,7 @@
             mainFrame.className = 'rounded-2xl overflow-hidden bg-cream-100 border border-cream-200 aspect-square max-h-[380px] mx-auto';
             const mainImg = document.createElement('img');
             mainImg.id = 'detail-main-img';
-            mainImg.src = activeAccountDetailImages[0] || '';
+            mainImg.src = activeAccountDetailImages[0] || createSampleSvg('#FFF4EF', '#FFE3D8', `รหัส ${accCode}`, acc.category, true);
             mainImg.className = 'w-full h-full object-cover';
             mainFrame.appendChild(mainImg);
             galleryWrap.appendChild(mainFrame);
@@ -3788,14 +3819,14 @@
             event.preventDefault();
             const client = getSupabaseClient();
             if (!client) {
-                showToast('ไม่พบการเชื่อมต่อ Supabase กรุณาตรวจสอบการตั้งค่า', 'error');
+                showToast('ไม่สามารถเชื่อมต่อระบบฐานข้อมูลได้ในขณะนี้', 'error');
                 return;
             }
 
             const btn = document.getElementById('btn-submit-customer-review');
             await runWithActionGuard('submit-customer-review', btn, async () => {
-                const author = document.getElementById('cust-rev-author').value.trim();
-                const text = document.getElementById('cust-rev-text').value.trim();
+                const author = document.getElementById('cust-rev-author').value.trim().slice(0, 80);
+                const text = document.getElementById('cust-rev-text').value.trim().slice(0, 500);
                 const rating = Math.min(5, Math.max(1, parseInt(document.getElementById('cust-rev-rating').value, 10) || 5));
 
                 if (!author) {
@@ -3814,7 +3845,7 @@
                             author,
                             rating,
                             review_text: text,
-                            image_url: tempCustomerReviewImg || ''
+                            image_url: isSafeMediaUrlOrData(tempCustomerReviewImg) ? tempCustomerReviewImg : ''
                         });
                     if (error) throw error;
 
@@ -3823,7 +3854,7 @@
                     showToast(`ส่งรีวิว ${rating} ดาวของคุณเรียบร้อยแล้ว ขอบคุณมากครับ`);
                 } catch (err) {
                     console.error('submitCustomerReviewForm error:', err);
-                    showToast('ส่งรีวิวไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    showToast('ส่งรีวิวไม่สำเร็จ กรุณาตรวจสอบข้อมูลและลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
@@ -3837,7 +3868,7 @@
             }
 
             if (appState.storeError) {
-                renderStatusBox(container, 'error', 'เกิดข้อผิดพลาดในการโหลดรีวิว', appState.storeError, loadAllStoreDataFromSupabase);
+                renderStatusBox(container, 'error', 'ไม่สามารถโหลดรีวิวได้', appState.storeError, loadAllStoreDataFromSupabase);
                 return;
             }
 
@@ -3849,7 +3880,7 @@
             container.replaceChildren();
 
             storeData.reviews.forEach(rev => {
-                const hasImg = rev.image && rev.image.trim() !== '';
+                const hasImg = rev.image && isSafeMediaUrlOrData(rev.image);
                 const hasText = rev.text && rev.text.trim() !== '';
 
                 const card = document.createElement('div');
@@ -3904,7 +3935,7 @@
             }
 
             if (appState.storeError) {
-                renderStatusBox(container, 'error', 'เกิดข้อผิดพลาดในการโหลดช่องทางติดต่อ', appState.storeError, loadAllStoreDataFromSupabase);
+                renderStatusBox(container, 'error', 'ไม่สามารถโหลดช่องทางติดต่อได้', appState.storeError, loadAllStoreDataFromSupabase);
                 return;
             }
 
@@ -3924,7 +3955,9 @@
                 link.className = 'bg-white rounded-3xl p-5 border border-cream-200 shadow-card hover:border-peach-400 hover:shadow-soft transition-all flex items-center gap-4 group';
 
                 const iconImg = document.createElement('img');
-                iconImg.src = con.icon || createSampleSvg('#FFF4EF', '#FFE3D8', 'CONTACT', '', true);
+                iconImg.src = (con.icon && isSafeMediaUrlOrData(con.icon))
+                    ? con.icon
+                    : createSampleSvg('#FFF4EF', '#FFE3D8', 'CONTACT', '', true);
                 iconImg.alt = con.name || 'ติดต่อร้าน';
                 iconImg.className = 'w-14 h-14 rounded-full object-cover border border-cream-200 flex-shrink-0 group-hover:scale-105 transition-transform';
 
@@ -4060,7 +4093,7 @@
             const logoUrl = storeData.storeSettings.logoImage || '';
             const previewImg = document.getElementById('admin-logo-preview');
             const fallbackIcon = document.getElementById('admin-logo-fallback');
-            if (logoUrl) {
+            if (logoUrl && isSafeMediaUrlOrData(logoUrl)) {
                 previewImg.src = logoUrl;
                 previewImg.classList.remove('hidden');
                 fallbackIcon.classList.add('hidden');
@@ -4115,55 +4148,80 @@
         }
 
         async function setStoreOpenStatus(isOpen) {
-            await runWithActionGuard('toggle-store-status', null, async () => {
-                storeData.storeSettings.isOpen = isOpen;
-                renderAdminStoreStatusUI();
-                renderStoreStatusUI();
+            storeData.storeSettings.isOpen = Boolean(isOpen);
+            renderAdminStoreStatusUI();
+            renderStoreStatusUI();
+            lucide.createIcons();
+            if (appState.isAdminVerified) {
                 const ok = await saveStoreSettingsToSupabase();
-                if (ok) {
-                    showToast(isOpen ? 'เปลี่ยนสถานะเป็น "เปิดร้าน" เรียบร้อยแล้ว' : 'เปลี่ยนสถานะเป็น "ปิดร้าน" เรียบร้อยแล้ว');
-                }
-            });
+                if (ok) showToast(isOpen ? 'เปลี่ยนสถานะเป็น "เปิดร้าน" แล้ว' : 'เปลี่ยนสถานะเป็น "ปิดร้าน" แล้ว');
+            } else {
+                showToast(isOpen ? 'เปลี่ยนสถานะเป็น "เปิดร้าน" แล้ว' : 'เปลี่ยนสถานะเป็น "ปิดร้าน" แล้ว');
+            }
         }
 
         async function handleBgMusicFileUpload(event) {
-            const file = event.target.files[0];
-            event.target.value = '';
+            const file = event.target.files?.[0];
+            const inputEl = event.target;
             if (!file) return;
+            inputEl.value = '';
 
-            const client = getSupabaseClient();
-            if (client && client.storage && appState.isAdminVerified) {
-                try {
-                    const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
-                    const ext = extMatch ? extMatch[1].toLowerCase() : 'mp3';
-                    const uploadedUrl = await uploadBlobToStoreBucket(file, 'music', ext, file.type || 'audio/mpeg');
-                    if (uploadedUrl) {
-                        document.getElementById('input-bg-music-url').value = uploadedUrl;
-                        await saveBackgroundMusicSettings();
-                        return;
-                    }
-                } catch (err) {
-                    console.warn('Music storage upload fallback to DataURL:', err);
-                }
+            if (typeof file.size === 'number' && file.size > MAX_AUDIO_FILE_BYTES) {
+                showToast('ขนาดไฟล์เพลงต้องไม่เกิน 15 MB', 'error');
+                return;
             }
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                document.getElementById('input-bg-music-url').value = e.target.result;
-                await saveBackgroundMusicSettings();
-            };
-            reader.onerror = () => showToast('ไม่สามารถอ่านไฟล์เสียงได้', 'error');
-            reader.readAsDataURL(file);
+            const mime = (file.type || '').toLowerCase();
+            if (!ALLOWED_AUDIO_MIMES.has(mime) && !/\.(mp3|wav|ogg|m4a|aac|flac|webm)$/i.test(file.name || '')) {
+                showToast('กรุณาเลือกไฟล์เสียงที่รองรับ (MP3, WAV, OGG, M4A)', 'error');
+                return;
+            }
+
+            if (!appState.isAdminVerified) {
+                showToast('เฉพาะแอดมินที่เข้าสู่ระบบแล้วเท่านั้นที่อัปโหลดไฟล์เพลงได้', 'error');
+                return;
+            }
+
+            try {
+                const ext = (file.name && file.name.split('.').pop()) ? file.name.split('.').pop().toLowerCase() : 'mp3';
+                const uploadedUrl = await uploadBlobToStoreBucket(file, 'music', ext, file.type || 'audio/mpeg');
+                if (!uploadedUrl) {
+                    showToast('อัปโหลดไฟล์เพลงไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                    return;
+                }
+                storeData.storeSettings.bgMusicUrl = uploadedUrl;
+                document.getElementById('input-bg-music-url').value = uploadedUrl;
+                const ok = await saveStoreSettingsToSupabase();
+                if (ok) {
+                    userExplicitlyMuted = false;
+                    playBackgroundMusic();
+                    showToast('อัปโหลดเพลงขึ้น Storage และเล่นเพลงพื้นหลังแล้ว');
+                }
+            } catch (err) {
+                console.error('Audio upload error:', err);
+                showToast('อัปโหลดไฟล์เพลงไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+            }
         }
 
         async function saveBackgroundMusicSettings() {
             const btn = document.getElementById('btn-save-bg-music');
             await runWithActionGuard('save-bg-music', btn, async () => {
-                const url = document.getElementById('input-bg-music-url').value.trim();
-                storeData.storeSettings.bgMusicUrl = url;
-                playBackgroundMusic();
+                const rawUrl = document.getElementById('input-bg-music-url').value.trim();
+                const volVal = Math.min(100, Math.max(0, parseInt(document.getElementById('input-bg-music-volume').value, 10) || 0));
+
+                if (rawUrl && !/^https:\/\//i.test(rawUrl) && !/^http:\/\//i.test(rawUrl) && !/^data:audio\//i.test(rawUrl)) {
+                    showToast('กรุณากรอกลิงก์เพลงที่ขึ้นต้นด้วย https:// หรือ http://', 'error');
+                    return;
+                }
+
+                storeData.storeSettings.bgMusicUrl = rawUrl;
+                storeData.storeSettings.bgMusicVolume = volVal;
                 const ok = await saveStoreSettingsToSupabase();
-                if (ok) showToast('บันทึกเสียงเพลงพื้นหลังเรียบร้อยแล้ว');
+                if (ok) {
+                    userExplicitlyMuted = false;
+                    playBackgroundMusic();
+                    showToast('บันทึกการตั้งค่าเพลงพื้นหลังเรียบร้อยแล้ว');
+                }
             });
         }
 
@@ -4173,148 +4231,141 @@
                 storeData.storeSettings.bgMusicUrl = '';
                 document.getElementById('input-bg-music-url').value = '';
                 document.getElementById('input-bg-music-file').value = '';
-                stopBackgroundMusic(true);
                 const ok = await saveStoreSettingsToSupabase();
-                if (ok) showToast('ล้างเสียงเพลงพื้นหลังเรียบร้อยแล้ว');
+                if (ok) {
+                    stopBackgroundMusic(true);
+                    showToast('ล้างลิงก์เพลงพื้นหลังแล้ว');
+                }
             });
         }
 
         async function saveStoreBannerSettings() {
             const btn = document.getElementById('btn-save-banner');
             await runWithActionGuard('save-banner', btn, async () => {
-                const titleVal = document.getElementById('input-banner-title').value.trim() || 'ยินดีต้อนรับสู่ร้านปล่อยเช่ารหัส Free Fire';
-                const subVal = document.getElementById('input-banner-subtitle').value.trim();
-                storeData.storeSettings.bannerTitle = titleVal;
-                storeData.storeSettings.bannerSubtitle = subVal;
-                document.getElementById('txt-banner-title').value = titleVal;
-                document.getElementById('txt-banner-subtitle').value = subVal;
+                storeData.storeSettings.bannerTitle = document.getElementById('input-banner-title').value.trim();
+                storeData.storeSettings.bannerSubtitle = document.getElementById('input-banner-subtitle').value.trim();
+                document.getElementById('txt-banner-title').value = storeData.storeSettings.bannerTitle;
+                document.getElementById('txt-banner-subtitle').value = storeData.storeSettings.bannerSubtitle;
                 renderStoreBanner();
-                lucide.createIcons();
                 const ok = await saveStoreSettingsToSupabase();
-                if (ok) showToast('บันทึกข้อมูลหน้าปกเรียบร้อยแล้ว');
+                if (ok) showToast('บันทึกข้อมูลแบนเนอร์และหน้าปกร้านเรียบร้อยแล้ว');
             });
         }
 
-        // --- Built-in Block Visibility & Custom Blocks CRUD (custom_blocks) ---
-        async function toggleBuiltInBlockVisibility(blockKey, isVisible) {
+        async function toggleBuiltInBlockVisibility(blockKey, isChecked) {
             if (blockKey === 'important') {
-                storeData.importantInfoSettings.visible = isVisible;
+                storeData.importantInfoSettings.visible = Boolean(isChecked);
             } else if (blockKey === 'rules') {
-                storeData.rulesSettings.visible = isVisible;
+                storeData.rulesSettings.visible = Boolean(isChecked);
             }
             renderStoreAll1x1Blocks();
             lucide.createIcons();
-            const ok = await saveStoreSettingsToSupabase();
-            if (ok) {
-                showToast(isVisible ? 'เปิดแสดงบล็อคบนหน้าร้านแล้ว' : 'ซ่อนบล็อคจากหน้าร้านแล้ว');
+            if (appState.isAdminVerified) {
+                const ok = await saveStoreSettingsToSupabase();
+                if (ok) showToast(isChecked ? 'แสดงบล็อคบนหน้าร้านแล้ว' : 'ซ่อนบล็อคจากหน้าร้านแล้ว');
             }
         }
 
-        function renderAdminCustomBlocks() {
-            const container = document.getElementById('admin-custom-blocks-list');
-            const blocks = storeData.customBlocks || [];
-            if (blocks.length === 0) {
-                renderStatusBox(container, 'empty', 'ไม่มีข้อมูลบล็อคเพิ่มเติม', 'กดปุ่ม "+ เพิ่มบล็อคใหม่" เพื่อสร้างบล็อคแสดงผลบนหน้าร้าน');
-                return;
+        function toggleImportantAdminFields() {
+            const mode = document.getElementById('input-important-mode').value;
+            const textGrp = document.getElementById('admin-important-text-group');
+            const imgGrp = document.getElementById('admin-important-image-group');
+            textGrp.classList.toggle('hidden', mode === 'image');
+            imgGrp.classList.toggle('hidden', mode === 'text');
+        }
+
+        function updateAdminImportantPreview() {
+            const box = document.getElementById('admin-important-preview-box');
+            const img = document.getElementById('admin-important-preview');
+            if (tempImportantImg && isSafeMediaUrlOrData(tempImportantImg)) {
+                img.src = tempImportantImg;
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
             }
+        }
 
-            container.replaceChildren();
-            blocks.forEach(cb => {
-                const card = document.createElement('div');
-                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between gap-3';
+        function clearImportantImage() {
+            tempImportantImg = '';
+            document.getElementById('input-important-img-file').value = '';
+            updateAdminImportantPreview();
+        }
 
-                const top = document.createElement('div');
-                top.className = 'space-y-2';
-
-                if (cb.image && (cb.mode === 'image' || cb.mode === 'both')) {
-                    const img = document.createElement('img');
-                    img.src = cb.image;
-                    img.className = 'w-full aspect-square rounded-2xl object-cover border border-cream-200';
-                    top.appendChild(img);
-                }
-
-                const h4 = document.createElement('h4');
-                h4.className = 'font-bold text-sm text-cocoa-900';
-                h4.textContent = cb.title || '';
-                top.appendChild(h4);
-
-                if (cb.subtitle) {
-                    const sub = document.createElement('p');
-                    sub.className = 'text-[11px] text-cocoa-600';
-                    sub.textContent = cb.subtitle;
-                    top.appendChild(sub);
-                }
-
-                if (cb.text && (cb.mode === 'text' || cb.mode === 'both')) {
-                    const txt = document.createElement('p');
-                    txt.className = 'text-xs text-cocoa-700 line-clamp-3';
-                    txt.textContent = cb.text;
-                    top.appendChild(txt);
-                }
-
-                const actions = document.createElement('div');
-                actions.className = 'flex justify-end gap-2 pt-2 border-t border-cream-200/80';
-
-                const editBtn = document.createElement('button');
-                editBtn.type = 'button';
-                editBtn.className = 'px-3.5 py-1.5 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100';
-                editBtn.textContent = 'แก้ไข';
-                editBtn.addEventListener('click', () => openCustomBlockModal(cb.id));
-
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'px-3.5 py-1.5 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100';
-                delBtn.textContent = 'ลบบล็อค';
-                delBtn.addEventListener('click', () => deleteCustomBlock(cb.id));
-
-                actions.appendChild(editBtn);
-                actions.appendChild(delBtn);
-                card.appendChild(top);
-                card.appendChild(actions);
-                container.appendChild(card);
+        async function saveStoreImportantInfoSettings(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btn-save-important-info');
+            await runWithActionGuard('save-important-info', btn, async () => {
+                storeData.importantInfoSettings = {
+                    visible: document.getElementById('input-important-visible').checked,
+                    title: document.getElementById('input-important-title').value.trim() || 'ข้อมูลสำคัญ & ประกาศจากร้าน',
+                    mode: document.getElementById('input-important-mode').value,
+                    text: document.getElementById('input-important-text').value.trim(),
+                    image: tempImportantImg || ''
+                };
+                renderStoreAll1x1Blocks();
+                lucide.createIcons();
+                const ok = await saveStoreSettingsToSupabase();
+                if (ok) showToast('บันทึกข้อมูลสำคัญเรียบร้อยแล้ว');
             });
         }
 
-        function openCustomBlockModal(id = null) {
-            document.getElementById('cb-img-file').value = '';
-            if (id) {
-                const cb = (storeData.customBlocks || []).find(b => b.id === id);
-                if (!cb) return;
-                setSafeText(document.getElementById('modal-custom-block-title'), 'แก้ไขบล็อคแสดงผล (กรอบรูป 1:1)');
-                document.getElementById('cb-id').value = cb.id;
-                document.getElementById('cb-title').value = cb.title;
-                document.getElementById('cb-subtitle').value = cb.subtitle || '';
-                document.getElementById('cb-mode').value = cb.mode || 'both';
-                document.getElementById('cb-text').value = cb.text || '';
-                tempCustomBlockImg = cb.image || '';
+        function toggleRulesAdminFields() {
+            const mode = document.getElementById('input-rules-mode').value;
+            const textGrp = document.getElementById('admin-rules-text-group');
+            const imgGrp = document.getElementById('admin-rules-image-group');
+            textGrp.classList.toggle('hidden', mode === 'image');
+            imgGrp.classList.toggle('hidden', mode === 'text');
+        }
+
+        function updateAdminRulesPreview() {
+            const box = document.getElementById('admin-rules-preview-box');
+            const img = document.getElementById('admin-rules-preview');
+            if (tempRulesImg && isSafeMediaUrlOrData(tempRulesImg)) {
+                img.src = tempRulesImg;
+                box.classList.remove('hidden');
             } else {
-                setSafeText(document.getElementById('modal-custom-block-title'), 'เพิ่มบล็อคแสดงผลใหม่ (กรอบรูป 1:1)');
-                document.getElementById('cb-id').value = '';
-                document.getElementById('cb-title').value = '';
-                document.getElementById('cb-subtitle').value = '';
-                document.getElementById('cb-mode').value = 'both';
-                document.getElementById('cb-text').value = '';
-                tempCustomBlockImg = '';
+                box.classList.add('hidden');
             }
-            updateCustomBlockPreview();
-            toggleCustomBlockModalFields();
-            document.getElementById('modal-admin-custom-block').classList.remove('hidden');
-            lucide.createIcons();
+        }
+
+        function clearRulesImage() {
+            tempRulesImg = '';
+            document.getElementById('input-rules-img-file').value = '';
+            updateAdminRulesPreview();
+        }
+
+        async function saveStoreRulesSettings(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btn-save-rules');
+            await runWithActionGuard('save-rules', btn, async () => {
+                storeData.rulesSettings = {
+                    visible: document.getElementById('input-rules-visible').checked,
+                    title: document.getElementById('input-rules-title').value.trim() || 'กฎการเช่า & ข้อตกลง',
+                    mode: document.getElementById('input-rules-mode').value,
+                    text: document.getElementById('input-rules-text').value.trim(),
+                    image: tempRulesImg || ''
+                };
+                renderStoreAll1x1Blocks();
+                lucide.createIcons();
+                const ok = await saveStoreSettingsToSupabase();
+                if (ok) showToast('บันทึกกฎการเช่าเรียบร้อยแล้ว');
+            });
         }
 
         function toggleCustomBlockModalFields() {
             const mode = document.getElementById('cb-mode').value;
-            const textGroup = document.getElementById('cb-text-group');
-            const imgGroup = document.getElementById('cb-image-group');
-            if (mode === 'text') {
-                textGroup.classList.remove('hidden');
-                imgGroup.classList.add('hidden');
-            } else if (mode === 'image') {
-                textGroup.classList.add('hidden');
-                imgGroup.classList.remove('hidden');
+            document.getElementById('cb-text-group').classList.toggle('hidden', mode === 'image');
+            document.getElementById('cb-image-group').classList.toggle('hidden', mode === 'text');
+        }
+
+        function updateCustomBlockPreview() {
+            const box = document.getElementById('cb-preview-box');
+            const img = document.getElementById('cb-preview');
+            if (tempCustomBlockImg && isSafeMediaUrlOrData(tempCustomBlockImg)) {
+                img.src = tempCustomBlockImg;
+                box.classList.remove('hidden');
             } else {
-                textGroup.classList.remove('hidden');
-                imgGroup.classList.remove('hidden');
+                box.classList.add('hidden');
             }
         }
 
@@ -4324,23 +4375,41 @@
             updateCustomBlockPreview();
         }
 
-        function updateCustomBlockPreview() {
-            const box = document.getElementById('cb-preview-box');
-            if (tempCustomBlockImg) {
-                document.getElementById('cb-preview').src = tempCustomBlockImg;
-                box.classList.remove('hidden');
+        function openCustomBlockModal(blockId = null) {
+            if (!appState.isAdminVerified) return;
+            document.getElementById('cb-id').value = '';
+            document.getElementById('cb-title').value = '';
+            document.getElementById('cb-subtitle').value = '';
+            document.getElementById('cb-mode').value = 'both';
+            document.getElementById('cb-text').value = '';
+            document.getElementById('cb-img-file').value = '';
+            tempCustomBlockImg = '';
+
+            if (blockId) {
+                const found = storeData.customBlocks.find(b => b.id === blockId);
+                if (found) {
+                    setSafeText(document.getElementById('modal-custom-block-title'), 'แก้ไขบล็อคแสดงผล (กรอบรูป 1:1)');
+                    document.getElementById('cb-id').value = found.id;
+                    document.getElementById('cb-title').value = found.title || '';
+                    document.getElementById('cb-subtitle').value = found.subtitle || '';
+                    document.getElementById('cb-mode').value = found.mode || 'both';
+                    document.getElementById('cb-text').value = found.text || '';
+                    tempCustomBlockImg = found.image || '';
+                }
             } else {
-                box.classList.add('hidden');
+                setSafeText(document.getElementById('modal-custom-block-title'), 'เพิ่มบล็อคแสดงผลใหม่ (กรอบรูป 1:1)');
             }
+
+            updateCustomBlockPreview();
+            toggleCustomBlockModalFields();
+            document.getElementById('modal-admin-custom-block').classList.remove('hidden');
+            lucide.createIcons();
         }
 
         async function saveCustomBlockForm(event) {
             event.preventDefault();
             const client = getSupabaseClient();
-            if (!client || !appState.isAdminVerified) {
-                showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
-                return;
-            }
+            if (!client || !appState.isAdminVerified) return;
 
             const btn = document.getElementById('btn-save-custom-block');
             await runWithActionGuard('save-custom-block', btn, async () => {
@@ -4354,148 +4423,175 @@
                     showToast('กรุณากรอกหัวข้อบล็อค', 'error');
                     return;
                 }
-                if ((mode === 'text' && !text) || (mode === 'image' && !tempCustomBlockImg) || (mode === 'both' && !text && !tempCustomBlockImg)) {
-                    showToast('กรุณากรอกรายละเอียดข้อความหรือเลือกรูปภาพสำหรับบล็อค', 'error');
+                if ((mode === 'image' || mode === 'both') && !tempCustomBlockImg && mode === 'image') {
+                    showToast('กรุณาเลือกรูปภาพสำหรับบล็อคแบบแสดงเฉพาะรูปภาพ', 'error');
+                    return;
+                }
+                if (mode === 'text' && !text) {
+                    showToast('กรุณากรอกข้อความสำหรับบล็อคแบบแสดงเฉพาะข้อความ', 'error');
                     return;
                 }
 
                 try {
-                    const finalImgUrl = tempCustomBlockImg
-                        ? await uploadCroppedDataUrlToStorage(tempCustomBlockImg, 'blocks')
-                        : '';
-
-                    const payload = {
-                        title,
-                        subtitle,
-                        mode,
-                        content_text: text,
-                        image_url: finalImgUrl
-                    };
-
                     if (id) {
-                        const { error } = await client.from('custom_blocks').update(payload).eq('id', id);
+                        const { error } = await client
+                            .from('custom_blocks')
+                            .update({
+                                title,
+                                subtitle,
+                                mode,
+                                content_text: text,
+                                image_url: tempCustomBlockImg || ''
+                            })
+                            .eq('id', id);
                         if (error) throw error;
+                        showToast('แก้ไขบล็อคแสดงผลเรียบร้อยแล้ว');
                     } else {
-                        payload.sort_order = (storeData.customBlocks || []).length;
-                        const { error } = await client.from('custom_blocks').insert(payload);
+                        const { error } = await client
+                            .from('custom_blocks')
+                            .insert({
+                                title,
+                                subtitle,
+                                mode,
+                                content_text: text,
+                                image_url: tempCustomBlockImg || '',
+                                sort_order: storeData.customBlocks.length
+                            });
                         if (error) throw error;
+                        showToast('เพิ่มบล็อคแสดงผลใหม่เรียบร้อยแล้ว');
                     }
 
                     closeModal('modal-admin-custom-block');
                     await loadAllStoreDataFromSupabase();
-                    showToast('บันทึกบล็อคแสดงผลลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveCustomBlockForm error:', err);
-                    showToast('บันทึกบล็อคไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    showToast('บันทึกบล็อคไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
 
         function deleteCustomBlock(id) {
+            if (!appState.isAdminVerified) return;
             askConfirmation('คุณต้องการลบบล็อคแสดงผลนี้ใช่หรือไม่?', async () => {
                 const client = getSupabaseClient();
-                if (!client || !appState.isAdminVerified) return;
-                await runWithActionGuard(`delete-cb-${id}`, null, async () => {
-                    try {
-                        const { error } = await client.from('custom_blocks').delete().eq('id', id);
-                        if (error) throw error;
-                        await loadAllStoreDataFromSupabase();
-                        showToast('ลบบล็อคแสดงผลเรียบร้อยแล้ว');
-                    } catch (err) {
-                        console.error('deleteCustomBlock error:', err);
-                        showToast('ลบบล็อคไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
-                    }
-                });
+                if (!client) return;
+                try {
+                    const { error } = await client.from('custom_blocks').delete().eq('id', id);
+                    if (error) throw error;
+                    await loadAllStoreDataFromSupabase();
+                    showToast('ลบบล็อคแสดงผลเรียบร้อยแล้ว');
+                } catch (err) {
+                    console.error('deleteCustomBlock error:', err);
+                    showToast('ลบบล็อคไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                }
             });
         }
 
-        // --- Highlights CRUD (highlights) ---
-        function renderAdminHighlights() {
-            const container = document.getElementById('admin-highlights-list');
-            if (!storeData.highlights || storeData.highlights.length === 0) {
-                renderStatusBox(container, 'empty', 'ไม่มีข้อมูลไฮไลท์', 'กดปุ่ม "+ เพิ่มไฮไลท์ใหม่" เพื่อเริ่มต้น');
+        function renderAdminCustomBlocks() {
+            const container = document.getElementById('admin-custom-blocks-list');
+            container.replaceChildren();
+            if (!storeData.customBlocks || storeData.customBlocks.length === 0) {
+                renderStatusBox(container, 'empty', 'ยังไม่มีบล็อคเพิ่มเติม', 'กด "+ เพิ่มบล็อคใหม่" เพื่อสร้างบล็อคแสดงผลเพิ่มเติมบนหน้าร้าน');
                 return;
             }
 
-            container.replaceChildren();
-            storeData.highlights.forEach(hl => {
-                const validImgs = (hl.images && hl.images.length > 0) ? hl.images.filter(Boolean) : (hl.image ? [hl.image] : []);
-                const count = validImgs.length || 1;
-                const coverSrc = hl.image || validImgs[0] || createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true);
-
+            storeData.customBlocks.forEach(cb => {
                 const card = document.createElement('div');
-                card.className = 'bg-cream-100 rounded-3xl p-4 border border-cream-200 flex flex-col items-center justify-between gap-3 text-center';
+                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between gap-3';
 
                 const top = document.createElement('div');
-                top.className = 'flex flex-col items-center gap-2';
+                top.className = 'flex items-start gap-3';
 
-                const ring = document.createElement('div');
-                ring.className = 'relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-peach-400 to-peach-200';
-                const img = document.createElement('img');
-                img.src = coverSrc;
-                img.className = 'w-full h-full rounded-full object-cover bg-white';
-                img.onerror = function() { this.src = createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true); };
-                ring.appendChild(img);
+                if (cb.image && isSafeMediaUrlOrData(cb.image)) {
+                    const thumb = document.createElement('img');
+                    thumb.src = cb.image;
+                    thumb.className = 'w-14 h-14 rounded-2xl object-cover border border-cream-200 flex-shrink-0 bg-white';
+                    top.appendChild(thumb);
+                }
 
-                const cntBadge = document.createElement('span');
-                cntBadge.className = 'absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-cocoa-900 text-white text-[9px] font-bold';
-                cntBadge.textContent = `${count} รูป`;
-                ring.appendChild(cntBadge);
+                const meta = document.createElement('div');
+                meta.className = 'min-w-0 flex-grow';
 
                 const h4 = document.createElement('h4');
-                h4.className = 'font-bold text-xs sm:text-sm text-cocoa-900 line-clamp-1';
-                h4.textContent = hl.title || '';
+                h4.className = 'font-bold text-sm text-cocoa-900 truncate';
+                h4.textContent = cb.title || '';
 
-                top.appendChild(ring);
-                top.appendChild(h4);
+                const modeBadge = document.createElement('span');
+                modeBadge.className = 'inline-block mt-1 px-2.5 py-0.5 rounded-full bg-white text-cocoa-700 text-[10px] font-semibold border border-cream-200';
+                modeBadge.textContent = cb.mode === 'both' ? 'ข้อความ + รูป 1:1' : (cb.mode === 'image' ? 'รูป 1:1 อย่างเดียว' : 'ข้อความอย่างเดียว');
+
+                meta.appendChild(h4);
+                meta.appendChild(modeBadge);
+                if (cb.text) {
+                    const txtP = document.createElement('p');
+                    txtP.className = 'text-xs text-cocoa-600 line-clamp-2 mt-1';
+                    txtP.textContent = cb.text;
+                    meta.appendChild(txtP);
+                }
+
+                top.appendChild(meta);
+                card.appendChild(top);
 
                 const actions = document.createElement('div');
-                actions.className = 'flex justify-center gap-1.5 pt-2 border-t border-cream-200/70 w-full';
+                actions.className = 'flex gap-2 pt-2 border-t border-cream-200/80';
 
                 const editBtn = document.createElement('button');
                 editBtn.type = 'button';
-                editBtn.className = 'px-3 py-1 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100';
+                editBtn.className = 'flex-1 py-1.5 rounded-full bg-white hover:bg-cream-200 text-cocoa-800 text-xs font-medium border border-cream-200';
                 editBtn.textContent = 'แก้ไข';
-                editBtn.addEventListener('click', () => openHighlightModal(hl.id));
+                editBtn.addEventListener('click', () => openCustomBlockModal(cb.id));
 
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
-                delBtn.className = 'px-3 py-1 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100';
+                delBtn.className = 'px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-medium';
                 delBtn.textContent = 'ลบ';
-                delBtn.addEventListener('click', () => deleteHighlight(hl.id));
+                delBtn.addEventListener('click', () => deleteCustomBlock(cb.id));
 
                 actions.appendChild(editBtn);
                 actions.appendChild(delBtn);
-                card.appendChild(top);
                 card.appendChild(actions);
                 container.appendChild(card);
             });
         }
 
-        function openHighlightModal(id = null) {
-            document.getElementById('hl-img-file').value = '';
-            document.getElementById('hl-gallery-files').value = '';
-            if (id) {
-                const hl = storeData.highlights.find(h => h.id === id);
-                if (!hl) return;
-                setSafeText(document.getElementById('modal-highlight-title'), 'แก้ไขไฮไลท์');
-                document.getElementById('hl-id').value = hl.id;
-                document.getElementById('hl-title').value = hl.title;
-                tempHighlightImg = hl.image || '';
-                tempHighlightGallery = Array.isArray(hl.images) ? hl.images.filter(Boolean) : (hl.image ? [hl.image] : []);
+        // --- Circular Highlights CRUD (Supabase: highlights table) ---
+        function updateHighlightPreview() {
+            const box = document.getElementById('hl-preview-box');
+            const img = document.getElementById('hl-preview');
+            const cover = isSafeMediaUrlOrData(tempHighlightImg)
+                ? tempHighlightImg
+                : (tempHighlightGallery.find(u => isSafeMediaUrlOrData(u)) || '');
+            if (cover) {
+                img.src = cover;
+                box.classList.remove('hidden');
             } else {
-                setSafeText(document.getElementById('modal-highlight-title'), 'เพิ่มไฮไลท์ใหม่');
-                document.getElementById('hl-id').value = '';
-                document.getElementById('hl-title').value = '';
-                tempHighlightImg = '';
-                tempHighlightGallery = [];
+                box.classList.add('hidden');
             }
-            updateHighlightPreview();
-            document.getElementById('modal-admin-highlight').classList.remove('hidden');
-            lucide.createIcons();
+
+            const galContainer = document.getElementById('hl-gallery-previews');
+            galContainer.replaceChildren();
+            tempHighlightGallery.forEach((gImg, idx) => {
+                if (!isSafeMediaUrlOrData(gImg)) return;
+                const wrap = document.createElement('div');
+                wrap.className = 'relative aspect-square rounded-2xl overflow-hidden border border-cream-200 bg-cream-100 group';
+
+                const gEl = document.createElement('img');
+                gEl.src = gImg;
+                gEl.className = 'w-full h-full object-cover';
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'absolute top-1 right-1 bg-rose-500 text-white rounded-full w-6 h-6 text-xs font-bold shadow flex items-center justify-center';
+                delBtn.textContent = '×';
+                delBtn.addEventListener('click', () => removeHighlightGalleryImage(idx));
+
+                wrap.appendChild(gEl);
+                wrap.appendChild(delBtn);
+                galContainer.appendChild(wrap);
+            });
         }
 
-        function removeTempHighlightGalleryImage(index) {
+        function removeHighlightGalleryImage(index) {
             tempHighlightGallery.splice(index, 1);
             updateHighlightPreview();
         }
@@ -4506,503 +4602,261 @@
             updateHighlightPreview();
         }
 
-        function updateHighlightPreview() {
-            const box = document.getElementById('hl-preview-box');
-            if (tempHighlightImg) {
-                document.getElementById('hl-preview').src = tempHighlightImg;
-                box.classList.remove('hidden');
+        function openHighlightModal(hlId = null) {
+            if (!appState.isAdminVerified) return;
+            document.getElementById('hl-id').value = '';
+            document.getElementById('hl-title').value = '';
+            document.getElementById('hl-img-file').value = '';
+            document.getElementById('hl-gallery-files').value = '';
+            tempHighlightImg = '';
+            tempHighlightGallery = [];
+
+            if (hlId) {
+                const found = storeData.highlights.find(h => h.id === hlId);
+                if (found) {
+                    setSafeText(document.getElementById('modal-highlight-title'), 'แก้ไขไฮไลท์ร้าน');
+                    document.getElementById('hl-id').value = found.id;
+                    document.getElementById('hl-title').value = found.title || '';
+                    tempHighlightImg = found.image || '';
+                    tempHighlightGallery = Array.isArray(found.images) ? [...found.images] : (found.image ? [found.image] : []);
+                }
             } else {
-                box.classList.add('hidden');
+                setSafeText(document.getElementById('modal-highlight-title'), 'เพิ่มไฮไลท์ร้าน');
             }
-
-            const galleryContainer = document.getElementById('hl-gallery-previews');
-            galleryContainer.replaceChildren();
-            tempHighlightGallery.filter(Boolean).forEach((imgUrl, idx) => {
-                const item = document.createElement('div');
-                item.className = 'relative rounded-2xl overflow-hidden border border-cream-200 aspect-square bg-cream-100 flex items-center justify-center';
-
-                const img = document.createElement('img');
-                img.src = imgUrl;
-                img.className = 'w-full h-full object-contain';
-
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'absolute top-1 right-1 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow';
-                delBtn.textContent = '×';
-                delBtn.addEventListener('click', () => removeTempHighlightGalleryImage(idx));
-
-                item.appendChild(img);
-                item.appendChild(delBtn);
-                galleryContainer.appendChild(item);
-            });
+            updateHighlightPreview();
+            document.getElementById('modal-admin-highlight').classList.remove('hidden');
+            lucide.createIcons();
         }
 
         async function saveHighlightForm(event) {
             event.preventDefault();
             const client = getSupabaseClient();
-            if (!client || !appState.isAdminVerified) {
-                showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
-                return;
-            }
+            if (!client || !appState.isAdminVerified) return;
 
             const btn = document.getElementById('btn-save-highlight');
             await runWithActionGuard('save-highlight', btn, async () => {
-                const validGallery = tempHighlightGallery.filter(Boolean);
-                if (!tempHighlightImg && validGallery.length > 0) tempHighlightImg = validGallery[0];
-                if (!tempHighlightImg) {
-                    showToast('กรุณาเลือกรูปภาพไฮไลท์', 'error');
+                const id = document.getElementById('hl-id').value;
+                const title = document.getElementById('hl-title').value.trim();
+                const gallery = tempHighlightGallery.filter(u => isSafeMediaUrlOrData(u));
+                const cover = isSafeMediaUrlOrData(tempHighlightImg) ? tempHighlightImg : (gallery[0] || '');
+
+                if (!title) {
+                    showToast('กรุณากรอกชื่อไฮไลท์', 'error');
+                    return;
+                }
+                if (!cover && gallery.length === 0) {
+                    showToast('กรุณาเลือกรูปปกหรือเพิ่มรูปภาพลงในไฮไลท์อย่างน้อย 1 รูป', 'error');
                     return;
                 }
 
-                const id = document.getElementById('hl-id').value;
-                const title = document.getElementById('hl-title').value.trim();
+                const finalGallery = gallery.length > 0 ? gallery : [cover];
 
                 try {
-                    const finalCover = await uploadCroppedDataUrlToStorage(tempHighlightImg, 'highlights');
-                    const rawGallery = validGallery.length > 0 ? [...validGallery] : [tempHighlightImg];
-                    const finalGallery = await Promise.all(
-                        rawGallery.map(u => uploadCroppedDataUrlToStorage(u, 'highlights'))
-                    );
-
-                    const payload = {
-                        title,
-                        cover_image: finalCover,
-                        gallery_images: finalGallery
-                    };
-
                     if (id) {
-                        const { error } = await client.from('highlights').update(payload).eq('id', id);
+                        const { error } = await client
+                            .from('highlights')
+                            .update({
+                                title,
+                                cover_image: cover,
+                                gallery_images: finalGallery
+                            })
+                            .eq('id', id);
                         if (error) throw error;
+                        showToast('แก้ไขไฮไลท์เรียบร้อยแล้ว');
                     } else {
-                        payload.sort_order = (storeData.highlights || []).length;
-                        const { error } = await client.from('highlights').insert(payload);
+                        const { error } = await client
+                            .from('highlights')
+                            .insert({
+                                title,
+                                cover_image: cover,
+                                gallery_images: finalGallery,
+                                sort_order: storeData.highlights.length
+                            });
                         if (error) throw error;
+                        showToast('เพิ่มไฮไลท์ใหม่เรียบร้อยแล้ว');
                     }
 
                     closeModal('modal-admin-highlight');
                     await loadAllStoreDataFromSupabase();
-                    showToast('บันทึกไฮไลท์ลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveHighlightForm error:', err);
-                    showToast('บันทึกไฮไลท์ไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    showToast('บันทึกไฮไลท์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
 
         function deleteHighlight(id) {
+            if (!appState.isAdminVerified) return;
             askConfirmation('คุณต้องการลบไฮไลท์นี้ใช่หรือไม่?', async () => {
                 const client = getSupabaseClient();
-                if (!client || !appState.isAdminVerified) return;
-                await runWithActionGuard(`delete-hl-${id}`, null, async () => {
-                    try {
-                        const { error } = await client.from('highlights').delete().eq('id', id);
-                        if (error) throw error;
-                        await loadAllStoreDataFromSupabase();
-                        showToast('ลบไฮไลท์เรียบร้อยแล้ว');
-                    } catch (err) {
-                        console.error('deleteHighlight error:', err);
-                        showToast('ลบไฮไลท์ไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
-                    }
-                });
-            });
-        }
-
-        // --- Important Info & Rules Settings (store_settings) ---
-        function toggleImportantAdminFields() {
-            const mode = document.getElementById('input-important-mode').value;
-            const textGroup = document.getElementById('admin-important-text-group');
-            const imgGroup = document.getElementById('admin-important-image-group');
-
-            if (mode === 'text') {
-                textGroup.classList.remove('hidden');
-                imgGroup.classList.add('hidden');
-            } else if (mode === 'image') {
-                textGroup.classList.add('hidden');
-                imgGroup.classList.remove('hidden');
-            } else {
-                textGroup.classList.remove('hidden');
-                imgGroup.classList.remove('hidden');
-            }
-        }
-
-        function clearImportantImage() {
-            tempImportantImg = '';
-            document.getElementById('input-important-img-file').value = '';
-            updateAdminImportantPreview();
-        }
-
-        function updateAdminImportantPreview() {
-            const box = document.getElementById('admin-important-preview-box');
-            if (tempImportantImg) {
-                document.getElementById('admin-important-preview').src = tempImportantImg;
-                box.classList.remove('hidden');
-            } else {
-                box.classList.add('hidden');
-            }
-        }
-
-        async function saveStoreImportantInfoSettings(event) {
-            event.preventDefault();
-            const btn = document.getElementById('btn-save-important-info');
-            await runWithActionGuard('save-important-info', btn, async () => {
-                const title = document.getElementById('input-important-title').value.trim() || 'ข้อมูลสำคัญ & ประกาศจากร้าน';
-                const mode = document.getElementById('input-important-mode').value;
-                const text = document.getElementById('input-important-text').value.trim();
-                const visible = document.getElementById('input-important-visible').checked;
-
-                if (mode === 'image' && !tempImportantImg) {
-                    showToast('กรุณาเลือกรูปภาพสำหรับข้อมูลสำคัญ', 'error');
-                    return;
-                }
-
-                const finalImg = tempImportantImg
-                    ? await uploadCroppedDataUrlToStorage(tempImportantImg, 'blocks')
-                    : '';
-                tempImportantImg = finalImg;
-
-                storeData.importantInfoSettings = { visible, title, mode, text, image: finalImg };
-                renderStoreAll1x1Blocks();
-                lucide.createIcons();
-                const ok = await saveStoreSettingsToSupabase();
-                if (ok) showToast('บันทึกข้อมูลสำคัญลงฐานข้อมูลเรียบร้อยแล้ว');
-            });
-        }
-
-        function toggleRulesAdminFields() {
-            const mode = document.getElementById('input-rules-mode').value;
-            const textGroup = document.getElementById('admin-rules-text-group');
-            const imgGroup = document.getElementById('admin-rules-image-group');
-
-            if (mode === 'text') {
-                textGroup.classList.remove('hidden');
-                imgGroup.classList.add('hidden');
-            } else if (mode === 'image') {
-                textGroup.classList.add('hidden');
-                imgGroup.classList.remove('hidden');
-            } else {
-                textGroup.classList.remove('hidden');
-                imgGroup.classList.remove('hidden');
-            }
-        }
-
-        function clearRulesImage() {
-            tempRulesImg = '';
-            document.getElementById('input-rules-img-file').value = '';
-            updateAdminRulesPreview();
-        }
-
-        function updateAdminRulesPreview() {
-            const box = document.getElementById('admin-rules-preview-box');
-            if (tempRulesImg) {
-                document.getElementById('admin-rules-preview').src = tempRulesImg;
-                box.classList.remove('hidden');
-            } else {
-                box.classList.add('hidden');
-            }
-        }
-
-        async function saveStoreRulesSettings(event) {
-            event.preventDefault();
-            const btn = document.getElementById('btn-save-rules');
-            await runWithActionGuard('save-rules', btn, async () => {
-                const title = document.getElementById('input-rules-title').value.trim() || 'กฎการเช่า & ข้อตกลง';
-                const mode = document.getElementById('input-rules-mode').value;
-                const text = document.getElementById('input-rules-text').value.trim();
-                const visible = document.getElementById('input-rules-visible').checked;
-
-                if (mode === 'image' && !tempRulesImg) {
-                    showToast('กรุณาเลือกรูปภาพสำหรับกฎการเช่า', 'error');
-                    return;
-                }
-
-                const finalImg = tempRulesImg
-                    ? await uploadCroppedDataUrlToStorage(tempRulesImg, 'blocks')
-                    : '';
-                tempRulesImg = finalImg;
-
-                storeData.rulesSettings = { visible, title, mode, text, image: finalImg };
-                renderStoreAll1x1Blocks();
-                lucide.createIcons();
-                const ok = await saveStoreSettingsToSupabase();
-                if (ok) showToast('บันทึกกฎการเช่าลงฐานข้อมูลเรียบร้อยแล้ว');
-            });
-        }
-
-        // --- Categories CRUD (categories) ---
-        function getEditableCategories() {
-            return storeData.categories.filter(c => c !== 'ทั้งหมด');
-        }
-
-        function renderAdminCategories() {
-            const container = document.getElementById('admin-categories-list');
-            const editableCats = getEditableCategories();
-            if (editableCats.length === 0) {
-                renderStatusBox(container, 'empty', 'ไม่มีข้อมูลประเภทรหัส', 'ยังไม่มีประเภทรหัสเพิ่มเติม');
-                return;
-            }
-
-            container.replaceChildren();
-            editableCats.forEach((cat, idx) => {
-                const row = document.createElement('div');
-                row.className = 'flex items-center justify-between px-4 py-3 rounded-2xl bg-cream-100 border border-cream-200';
-
-                const span = document.createElement('span');
-                span.className = 'text-sm font-medium text-cocoa-900';
-                span.textContent = cat;
-
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'px-3.5 py-1 rounded-full bg-rose-50 text-rose-600 text-xs font-medium hover:bg-rose-100';
-                delBtn.textContent = 'ลบประเภท';
-                delBtn.addEventListener('click', () => deleteCategoryByIndex(idx));
-
-                row.appendChild(span);
-                row.appendChild(delBtn);
-                container.appendChild(row);
-            });
-        }
-
-        async function handleAddCategory(event) {
-            event.preventDefault();
-            const client = getSupabaseClient();
-            if (!client || !appState.isAdminVerified) {
-                showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
-                return;
-            }
-
-            const btn = document.getElementById('btn-add-category');
-            await runWithActionGuard('add-category', btn, async () => {
-                const input = document.getElementById('new-category-name');
-                const name = input.value.trim();
-                if (!name) return;
-
-                if (storeData.categories.includes(name)) {
-                    showToast('มีประเภทรหัสนี้อยู่แล้ว', 'error');
-                    return;
-                }
-
+                if (!client) return;
                 try {
-                    const { error } = await client.from('categories').insert({
-                        name,
-                        sort_order: getEditableCategories().length
-                    });
+                    const { error } = await client.from('highlights').delete().eq('id', id);
                     if (error) throw error;
-
-                    input.value = '';
                     await loadAllStoreDataFromSupabase();
-                    showToast('เพิ่มประเภทรหัสลงฐานข้อมูลเรียบร้อยแล้ว');
+                    showToast('ลบไฮไลท์เรียบร้อยแล้ว');
                 } catch (err) {
-                    console.error('handleAddCategory error:', err);
-                    showToast('เพิ่มประเภทรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    console.error('deleteHighlight error:', err);
+                    showToast('ลบไฮไลท์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
 
-        function deleteCategoryByIndex(idx) {
-            const editableCats = getEditableCategories();
-            const targetCatName = editableCats[idx];
-            if (!targetCatName) return;
-
-            askConfirmation(`ต้องการลบประเภท "${targetCatName}" ใช่หรือไม่?`, async () => {
-                const client = getSupabaseClient();
-                if (!client || !appState.isAdminVerified) return;
-                await runWithActionGuard(`delete-cat-${targetCatName}`, null, async () => {
-                    try {
-                        const { error } = await client.from('categories').delete().eq('name', targetCatName);
-                        if (error) throw error;
-
-                        if (currentCategoryFilter === targetCatName) {
-                            currentCategoryFilter = 'ทั้งหมด';
-                        }
-                        await loadAllStoreDataFromSupabase();
-                        showToast('ลบประเภทรหัสเรียบร้อยแล้ว');
-                    } catch (err) {
-                        console.error('deleteCategoryByIndex error:', err);
-                        showToast('ลบประเภทรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
-                    }
-                });
-            });
-        }
-
-        // --- Accounts CRUD (accounts) ---
-        function renderAdminAccounts() {
-            const container = document.getElementById('admin-accounts-list');
-            if (!storeData.accounts || storeData.accounts.length === 0) {
-                renderStatusBox(container, 'empty', 'ไม่มีข้อมูลรหัสเช่า', 'กดปุ่ม "+ เพิ่มรหัสใหม่" เพื่อเริ่มต้น');
+        function renderAdminHighlights() {
+            const container = document.getElementById('admin-highlights-list');
+            container.replaceChildren();
+            if (!storeData.highlights || storeData.highlights.length === 0) {
+                renderStatusBox(container, 'empty', 'ยังไม่มีไฮไลท์', 'กด "+ เพิ่มไฮไลท์ใหม่" เพื่อเพิ่มไฮไลท์ทรงกลมบนหน้าร้าน');
                 return;
             }
 
-            container.replaceChildren();
-            storeData.accounts.forEach((acc, idx) => {
-                const isAvailable = acc.status === 'available';
-                const accCode = acc.code || `A${String(idx + 1).padStart(2, '0')}`;
-                const coverSrc = (acc.coverImage && acc.coverImage.trim() !== '')
-                    ? acc.coverImage
-                    : createSampleSvg('#FFF4EF', '#FFE3D8', `รหัส ${accCode}`, acc.category, true);
-
+            storeData.highlights.forEach(hl => {
+                const imgCount = (hl.images && hl.images.length > 0) ? hl.images.length : (hl.image ? 1 : 0);
                 const card = document.createElement('div');
-                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between gap-3';
+                card.className = 'bg-cream-100 rounded-2xl p-3.5 border border-cream-200 flex flex-col items-center gap-2.5 text-center';
 
-                const topRow = document.createElement('div');
-                topRow.className = 'flex gap-3.5 items-center';
+                const img = document.createElement('img');
+                img.src = (hl.image && isSafeMediaUrlOrData(hl.image))
+                    ? hl.image
+                    : createSampleSvg('#FFF4EF', '#FFE3D8', '✨', '', true);
+                img.className = 'w-16 h-16 rounded-full object-cover border-2 border-peach-400';
 
-                const thumb = document.createElement('img');
-                thumb.src = coverSrc;
-                thumb.className = 'w-20 h-20 aspect-square rounded-2xl object-cover flex-shrink-0 border border-cream-200 bg-white';
+                const titleEl = document.createElement('p');
+                titleEl.className = 'text-xs font-bold text-cocoa-900 line-clamp-1';
+                titleEl.textContent = hl.title || '';
 
-                const infoCol = document.createElement('div');
-                infoCol.className = 'min-w-0 flex-grow';
+                const countEl = document.createElement('span');
+                countEl.className = 'text-[10px] text-cocoa-600';
+                countEl.textContent = `${imgCount} รูปในไฮไลท์`;
 
-                const headerLine = document.createElement('div');
-                headerLine.className = 'flex items-center justify-between gap-2';
-
-                const leftBadges = document.createElement('div');
-                leftBadges.className = 'flex items-center gap-1.5 min-w-0';
-
-                const cPill = document.createElement('span');
-                cPill.className = 'px-2.5 py-0.5 rounded-full bg-cocoa-900 text-white text-xs font-bold flex-shrink-0';
-                cPill.textContent = accCode;
-
-                const catPill = document.createElement('span');
-                catPill.className = 'px-2.5 py-0.5 rounded-full bg-white border border-cream-200 text-xs font-bold text-cocoa-800 truncate';
-                catPill.textContent = acc.category || '';
-
-                leftBadges.appendChild(cPill);
-                leftBadges.appendChild(catPill);
-
-                const toggleStBtn = document.createElement('button');
-                toggleStBtn.type = 'button';
-                toggleStBtn.title = 'คลิกเพื่อสลับสถานะ';
-                toggleStBtn.className = `px-3 py-0.5 rounded-full text-xs font-semibold cursor-pointer transition-colors flex-shrink-0 ${isAvailable ? 'bg-sage-500 text-white' : 'bg-rose-500 text-white'}`;
-                toggleStBtn.textContent = `${isAvailable ? 'ว่าง' : 'ติดเช่า'} ⇄`;
-                toggleStBtn.addEventListener('click', () => toggleAccountStatus(acc.id));
-
-                headerLine.appendChild(leftBadges);
-                headerLine.appendChild(toggleStBtn);
-
-                const priceP = document.createElement('p');
-                priceP.className = 'text-xs font-bold text-peach-500 mt-1.5';
-                priceP.textContent = acc.price || '';
-
-                const rareP = document.createElement('p');
-                rareP.className = 'text-xs text-cocoa-600 truncate mt-0.5';
-                rareP.textContent = acc.rareSkins || '';
-
-                infoCol.appendChild(headerLine);
-                infoCol.appendChild(priceP);
-                infoCol.appendChild(rareP);
-
-                topRow.appendChild(thumb);
-                topRow.appendChild(infoCol);
-
-                const footRow = document.createElement('div');
-                footRow.className = 'flex items-center justify-between pt-2 border-t border-cream-200/80';
-
-                const metaSpan = document.createElement('span');
-                metaSpan.className = 'text-[11px] text-cocoa-600';
-                metaSpan.textContent = `ชุด: ${acc.outfitsCount || ''} | ปืน: ${acc.gunsCount || ''}`;
-
-                const btnsWrap = document.createElement('div');
-                btnsWrap.className = 'flex gap-2';
+                const btns = document.createElement('div');
+                btns.className = 'flex gap-1.5 w-full pt-1';
 
                 const editBtn = document.createElement('button');
                 editBtn.type = 'button';
-                editBtn.className = 'px-3.5 py-1.5 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100';
+                editBtn.className = 'flex-1 py-1.5 rounded-full bg-white hover:bg-cream-200 text-cocoa-800 text-[11px] font-medium border border-cream-200';
                 editBtn.textContent = 'แก้ไข';
-                editBtn.addEventListener('click', () => openAccountModal(acc.id));
+                editBtn.addEventListener('click', () => openHighlightModal(hl.id));
 
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
-                delBtn.className = 'px-3.5 py-1.5 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100';
+                delBtn.className = 'px-2.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-medium';
                 delBtn.textContent = 'ลบ';
-                delBtn.addEventListener('click', () => deleteAccount(acc.id));
+                delBtn.addEventListener('click', () => deleteHighlight(hl.id));
 
-                btnsWrap.appendChild(editBtn);
-                btnsWrap.appendChild(delBtn);
+                btns.appendChild(editBtn);
+                btns.appendChild(delBtn);
 
-                footRow.appendChild(metaSpan);
-                footRow.appendChild(btnsWrap);
-
-                card.appendChild(topRow);
-                card.appendChild(footRow);
+                card.appendChild(img);
+                card.appendChild(titleEl);
+                card.appendChild(countEl);
+                card.appendChild(btns);
                 container.appendChild(card);
             });
         }
 
-        async function toggleAccountStatus(id) {
-            const client = getSupabaseClient();
-            if (!client || !appState.isAdminVerified) return;
-            const acc = storeData.accounts.find(a => a.id === id);
-            if (!acc) return;
-
-            await runWithActionGuard(`toggle-acc-${id}`, null, async () => {
-                const nextStatus = acc.status === 'available' ? 'rented' : 'available';
-                try {
-                    const { error } = await client
-                        .from('accounts')
-                        .update({ status: nextStatus })
-                        .eq('id', id);
-                    if (error) throw error;
-
-                    await loadAllStoreDataFromSupabase();
-                    showToast(`เปลี่ยนสถานะรหัส ${acc.code || ''} เป็น "${nextStatus === 'available' ? 'ว่าง' : 'ติดเช่า'}" แล้ว`);
-                } catch (err) {
-                    console.error('toggleAccountStatus error:', err);
-                    showToast('เปลี่ยนสถานะรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
-                }
-            });
-        }
-
-        function suggestNextAccountCode() {
-            const count = storeData.accounts.length + 1;
-            return 'A' + String(count).padStart(2, '0');
-        }
-
-        function openAccountModal(id = null) {
-            const catSelect = document.getElementById('acc-category');
-            catSelect.replaceChildren();
-            const availableCats = storeData.categories.filter(c => c !== 'ทั้งหมด');
-            const fallbackCats = availableCats.length > 0 ? availableCats : ['ทั่วไป'];
-            fallbackCats.forEach(c => {
+        // --- Accounts CRUD (Supabase: accounts table) ---
+        function populateCategorySelect(selectedValue = '') {
+            const select = document.getElementById('acc-category');
+            select.replaceChildren();
+            const cats = storeData.categories.filter(c => c !== 'ทั้งหมด');
+            if (cats.length === 0) cats.push('ทั่วไป');
+            cats.forEach(cat => {
                 const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                catSelect.appendChild(opt);
+                opt.value = cat;
+                opt.textContent = cat;
+                if (cat === selectedValue) opt.selected = true;
+                select.appendChild(opt);
             });
+        }
 
+        function updateAccountImagePreviews() {
+            const coverBox = document.getElementById('acc-cover-preview-box');
+            const coverImg = document.getElementById('acc-cover-preview');
+            if (tempAccountCover && isSafeMediaUrlOrData(tempAccountCover)) {
+                coverImg.src = tempAccountCover;
+                coverBox.classList.remove('hidden');
+            } else {
+                coverBox.classList.add('hidden');
+            }
+
+            const extraContainer = document.getElementById('acc-extra-previews');
+            extraContainer.replaceChildren();
+            tempAccountExtras.forEach((imgUrl, idx) => {
+                if (!isSafeMediaUrlOrData(imgUrl)) return;
+                const wrap = document.createElement('div');
+                wrap.className = 'relative aspect-square rounded-2xl overflow-hidden border border-cream-200 bg-cream-100';
+
+                const imgEl = document.createElement('img');
+                imgEl.src = imgUrl;
+                imgEl.className = 'w-full h-full object-cover';
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'absolute top-1 right-1 bg-rose-500 text-white rounded-full w-6 h-6 text-xs font-bold shadow flex items-center justify-center';
+                delBtn.textContent = '×';
+                delBtn.addEventListener('click', () => removeExtraImage(idx));
+
+                wrap.appendChild(imgEl);
+                wrap.appendChild(delBtn);
+                extraContainer.appendChild(wrap);
+            });
+        }
+
+        function removeExtraImage(index) {
+            tempAccountExtras.splice(index, 1);
+            updateAccountImagePreviews();
+        }
+
+        function getNextSuggestedAccountCode() {
+            const usedNums = storeData.accounts
+                .map(a => {
+                    const m = String(a.code || '').match(/(\d+)$/);
+                    return m ? parseInt(m[1], 10) : 0;
+                })
+                .filter(n => n > 0);
+            const nextNum = (usedNums.length > 0 ? Math.max(...usedNums) : 0) + 1;
+            return `A${String(nextNum).padStart(2, '0')}`;
+        }
+
+        function openAccountModal(accId = null) {
+            if (!appState.isAdminVerified) return;
+            document.getElementById('acc-id').value = '';
             document.getElementById('acc-cover-file').value = '';
             document.getElementById('acc-extra-files').value = '';
+            tempAccountCover = '';
+            tempAccountExtras = [];
 
-            if (id) {
-                const acc = storeData.accounts.find(a => a.id === id);
-                if (!acc) return;
-                setSafeText(document.getElementById('modal-account-title'), 'แก้ไขรายละเอียดรหัส Free Fire');
-                document.getElementById('acc-id').value = acc.id;
-                document.getElementById('acc-code').value = acc.code || suggestNextAccountCode();
-                if (!fallbackCats.includes(acc.category)) {
-                    const extraOpt = document.createElement('option');
-                    extraOpt.value = acc.category;
-                    extraOpt.textContent = acc.category;
-                    catSelect.appendChild(extraOpt);
+            if (accId) {
+                const found = storeData.accounts.find(a => a.id === accId);
+                if (found) {
+                    setSafeText(document.getElementById('modal-account-title'), `แก้ไขรหัส Free Fire (${found.code || ''})`);
+                    document.getElementById('acc-id').value = found.id;
+                    document.getElementById('acc-code').value = found.code || '';
+                    populateCategorySelect(found.category);
+                    document.getElementById('acc-status').value = found.status;
+                    document.getElementById('acc-outfits').value = found.outfitsCount;
+                    document.getElementById('acc-guns').value = found.gunsCount;
+                    document.getElementById('acc-price').value = found.price;
+                    document.getElementById('acc-rare').value = found.rareSkins;
+                    document.getElementById('acc-items').value = found.itemsDetail;
+                    document.getElementById('acc-extra-info').value = found.extraInfo || '';
+                    document.getElementById('acc-link').value = found.rentLink;
+                    tempAccountCover = found.coverImage || '';
+                    tempAccountExtras = Array.isArray(found.extraImages) ? [...found.extraImages] : [];
                 }
-                document.getElementById('acc-category').value = acc.category;
-                document.getElementById('acc-status').value = acc.status;
-                document.getElementById('acc-outfits').value = acc.outfitsCount;
-                document.getElementById('acc-guns').value = acc.gunsCount;
-                document.getElementById('acc-price').value = acc.price;
-                document.getElementById('acc-rare').value = acc.rareSkins;
-                document.getElementById('acc-items').value = acc.itemsDetail;
-                document.getElementById('acc-extra-info').value = acc.extraInfo || '';
-                document.getElementById('acc-link').value = acc.rentLink;
-                tempAccountCover = acc.coverImage;
-                tempAccountExtras = [...(acc.extraImages || [])];
             } else {
                 setSafeText(document.getElementById('modal-account-title'), 'เพิ่มรหัส Free Fire ใหม่');
-                document.getElementById('form-admin-account').reset();
-                document.getElementById('acc-id').value = '';
-                document.getElementById('acc-code').value = suggestNextAccountCode();
-                tempAccountCover = '';
-                tempAccountExtras = [];
+                document.getElementById('acc-code').value = getNextSuggestedAccountCode();
+                populateCategorySelect();
+                document.getElementById('acc-status').value = 'available';
+                document.getElementById('acc-outfits').value = '';
+                document.getElementById('acc-guns').value = '';
+                document.getElementById('acc-price').value = '';
+                document.getElementById('acc-rare').value = '';
+                document.getElementById('acc-items').value = '';
+                document.getElementById('acc-extra-info').value = '';
+                document.getElementById('acc-link').value = '';
             }
 
             updateAccountImagePreviews();
@@ -5010,191 +4864,318 @@
             lucide.createIcons();
         }
 
-        function removeTempExtraImage(index) {
-            tempAccountExtras.splice(index, 1);
-            updateAccountImagePreviews();
-        }
-
-        function updateAccountImagePreviews() {
-            const coverBox = document.getElementById('acc-cover-preview-box');
-            if (tempAccountCover) {
-                document.getElementById('acc-cover-preview').src = tempAccountCover;
-                coverBox.classList.remove('hidden');
-            } else {
-                coverBox.classList.add('hidden');
-            }
-
-            const extrasContainer = document.getElementById('acc-extra-previews');
-            extrasContainer.replaceChildren();
-            tempAccountExtras.forEach((imgUrl, idx) => {
-                const item = document.createElement('div');
-                item.className = 'relative rounded-2xl overflow-hidden border border-cream-200 aspect-square bg-cream-100';
-
-                const img = document.createElement('img');
-                img.src = imgUrl;
-                img.className = 'w-full h-full object-cover';
-
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'absolute top-1 right-1 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow';
-                delBtn.textContent = '×';
-                delBtn.addEventListener('click', () => removeTempExtraImage(idx));
-
-                item.appendChild(img);
-                item.appendChild(delBtn);
-                extrasContainer.appendChild(item);
-            });
-        }
-
         async function saveAccountForm(event) {
             event.preventDefault();
             const client = getSupabaseClient();
-            if (!client || !appState.isAdminVerified) {
-                showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
-                return;
-            }
+            if (!client || !appState.isAdminVerified) return;
 
             const btn = document.getElementById('btn-save-account');
             await runWithActionGuard('save-account', btn, async () => {
-                if (!tempAccountCover) {
-                    showToast('กรุณาเลือกรูปภาพหน้าปกของรหัส', 'error');
-                    return;
-                }
-
-                const codeVal = document.getElementById('acc-code').value.trim();
-                if (!codeVal) {
-                    showToast('กรุณาระบุเลขรหัส เช่น A01', 'error');
-                    return;
-                }
-
                 const id = document.getElementById('acc-id').value;
+                const code = document.getElementById('acc-code').value.trim() || getNextSuggestedAccountCode();
                 const categoryName = document.getElementById('acc-category').value;
-                const matchedCat = (storeData.categoryRecords || []).find(c => c.name === categoryName);
+                const status = document.getElementById('acc-status').value === 'rented' ? 'rented' : 'available';
+                const outfitsCount = document.getElementById('acc-outfits').value.trim();
+                const gunsCount = document.getElementById('acc-guns').value.trim();
+                const price = document.getElementById('acc-price').value.trim();
+                const rareSkins = document.getElementById('acc-rare').value.trim();
+                const itemsDetail = document.getElementById('acc-items').value.trim();
+                const extraInfo = document.getElementById('acc-extra-info').value.trim();
+                const rentLink = document.getElementById('acc-link').value.trim();
+
+                if (!/^https:\/\//i.test(rentLink) && !/^http:\/\//i.test(rentLink)) {
+                    showToast('กรุณากรอกลิงก์เช่ารหัสที่ขึ้นต้นด้วย https:// หรือ http://', 'error');
+                    return;
+                }
+
+                const matchedCatRec = storeData.categoryRecords.find(c => c.name === categoryName);
+                const categoryId = matchedCatRec ? matchedCatRec.id : null;
+                const coverImage = isSafeMediaUrlOrData(tempAccountCover)
+                    ? tempAccountCover
+                    : createSampleSvg('#FFF4EF', '#FFE3D8', `รหัส ${code}`, categoryName, true);
+                const safeExtras = tempAccountExtras.filter(u => isSafeMediaUrlOrData(u));
+
+                const payload = {
+                    code,
+                    category_id: categoryId,
+                    category_name: categoryName,
+                    status,
+                    cover_image: coverImage,
+                    extra_images: safeExtras,
+                    outfits_count: outfitsCount,
+                    guns_count: gunsCount,
+                    rare_skins: rareSkins,
+                    items_detail: itemsDetail,
+                    extra_info: extraInfo,
+                    price,
+                    rent_link: rentLink
+                };
 
                 try {
-                    const finalCover = await uploadCroppedDataUrlToStorage(tempAccountCover, 'accounts');
-                    const finalExtras = await Promise.all(
-                        (tempAccountExtras || []).map(u => uploadCroppedDataUrlToStorage(u, 'accounts'))
-                    );
-
-                    const payload = {
-                        code: codeVal,
-                        category_id: matchedCat ? matchedCat.id : null,
-                        category_name: categoryName,
-                        status: document.getElementById('acc-status').value,
-                        cover_image: finalCover,
-                        extra_images: finalExtras,
-                        outfits_count: document.getElementById('acc-outfits').value.trim(),
-                        guns_count: document.getElementById('acc-guns').value.trim(),
-                        price: document.getElementById('acc-price').value.trim(),
-                        rare_skins: document.getElementById('acc-rare').value.trim(),
-                        items_detail: document.getElementById('acc-items').value.trim(),
-                        extra_info: document.getElementById('acc-extra-info').value.trim(),
-                        rent_link: document.getElementById('acc-link').value.trim()
-                    };
-
                     if (id) {
                         const { error } = await client.from('accounts').update(payload).eq('id', id);
                         if (error) throw error;
+                        showToast(`อัปเดตข้อมูลรหัส ${code} เรียบร้อยแล้ว`);
                     } else {
                         const { error } = await client.from('accounts').insert(payload);
                         if (error) throw error;
+                        showToast(`เพิ่มรหัส ${code} เข้าสู่ระบบเรียบร้อยแล้ว`);
                     }
 
                     closeModal('modal-admin-account');
                     await loadAllStoreDataFromSupabase();
-                    showToast(`บันทึกข้อมูลรหัส ${codeVal} ลงฐานข้อมูลเรียบร้อยแล้ว`);
                 } catch (err) {
                     console.error('saveAccountForm error:', err);
-                    showToast('บันทึกข้อมูลรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    showToast('บันทึกข้อมูลรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
 
-        function deleteAccount(id) {
-            askConfirmation('คุณต้องการลบรหัสนี้ใช่หรือไม่?', async () => {
+        async function quickToggleAccountStatus(accId) {
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) return;
+            const acc = storeData.accounts.find(a => a.id === accId);
+            if (!acc) return;
+            const nextStatus = acc.status === 'available' ? 'rented' : 'available';
+            try {
+                const { error } = await client.from('accounts').update({ status: nextStatus }).eq('id', accId);
+                if (error) throw error;
+                await loadAllStoreDataFromSupabase();
+                showToast(`เปลี่ยนสถานะรหัส ${acc.code || ''} เป็น "${nextStatus === 'available' ? 'ว่าง' : 'ติดเช่า'}" แล้ว`);
+            } catch (err) {
+                console.error('quickToggleAccountStatus error:', err);
+                showToast('เปลี่ยนสถานะรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+            }
+        }
+
+        function deleteAccount(accId) {
+            if (!appState.isAdminVerified) return;
+            const acc = storeData.accounts.find(a => a.id === accId);
+            askConfirmation(`คุณต้องการลบรหัส "${acc ? (acc.code || acc.category) : ''}" ใช่หรือไม่?`, async () => {
                 const client = getSupabaseClient();
-                if (!client || !appState.isAdminVerified) return;
-                await runWithActionGuard(`delete-acc-${id}`, null, async () => {
-                    try {
-                        const { error } = await client.from('accounts').delete().eq('id', id);
-                        if (error) throw error;
-                        await loadAllStoreDataFromSupabase();
-                        showToast('ลบรหัสเรียบร้อยแล้ว');
-                    } catch (err) {
-                        console.error('deleteAccount error:', err);
-                        showToast('ลบรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
-                    }
-                });
+                if (!client) return;
+                try {
+                    const { error } = await client.from('accounts').delete().eq('id', accId);
+                    if (error) throw error;
+                    await loadAllStoreDataFromSupabase();
+                    showToast('ลบข้อมูลรหัสเรียบร้อยแล้ว');
+                } catch (err) {
+                    console.error('deleteAccount error:', err);
+                    showToast('ลบข้อมูลรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                }
             });
         }
 
-        // --- Reviews CRUD (reviews) ---
-        function renderAdminReviews() {
-            const container = document.getElementById('admin-reviews-list');
-            if (!storeData.reviews || storeData.reviews.length === 0) {
-                renderStatusBox(container, 'empty', 'ไม่มีข้อมูลรีวิว', 'ยังไม่มีรายการรีวิว');
+        function renderAdminAccounts() {
+            const container = document.getElementById('admin-accounts-list');
+            container.replaceChildren();
+            if (storeData.accounts.length === 0) {
+                renderStatusBox(container, 'empty', 'ยังไม่มีข้อมูลรหัสเช่า', 'กด "+ เพิ่มรหัสใหม่" เพื่อเริ่มต้นเพิ่มรหัส Free Fire');
                 return;
             }
 
-            container.replaceChildren();
-            storeData.reviews.forEach(rev => {
+            storeData.accounts.forEach((acc, idx) => {
+                const isAvailable = acc.status === 'available';
+                const accCode = acc.code || `A${String(idx + 1).padStart(2, '0')}`;
+
                 const card = document.createElement('div');
-                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between gap-3';
+                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex gap-4 items-start';
 
-                const top = document.createElement('div');
-                top.className = 'space-y-2';
+                const img = document.createElement('img');
+                img.src = (acc.coverImage && isSafeMediaUrlOrData(acc.coverImage))
+                    ? acc.coverImage
+                    : createSampleSvg('#FFF4EF', '#FFE3D8', `รหัส ${accCode}`, acc.category, true);
+                img.className = 'w-20 h-20 rounded-2xl object-cover border border-cream-200 flex-shrink-0 bg-white';
 
-                if (rev.image) {
-                    const img = document.createElement('img');
-                    img.src = rev.image;
-                    img.className = 'w-full aspect-square object-cover rounded-2xl border border-cream-200';
-                    top.appendChild(img);
-                }
+                const body = document.createElement('div');
+                body.className = 'flex-grow min-w-0 space-y-1.5';
 
-                const headLine = document.createElement('div');
-                headLine.className = 'flex items-center justify-between gap-2';
+                const topRow = document.createElement('div');
+                topRow.className = 'flex items-center justify-between gap-2';
 
-                const h4 = document.createElement('h4');
-                h4.className = 'font-bold text-sm text-cocoa-900 truncate';
-                h4.textContent = rev.author || '';
+                const titleWrap = document.createElement('div');
+                titleWrap.className = 'flex items-center gap-1.5 truncate';
 
-                const stars = document.createElement('span');
-                stars.className = 'text-xs text-amber-400 flex-shrink-0';
-                renderStarRatingDisplay(stars, rev.rating || 5);
+                const codeSpan = document.createElement('span');
+                codeSpan.className = 'px-2.5 py-0.5 rounded-full bg-cocoa-900 text-white text-[11px] font-bold';
+                codeSpan.textContent = accCode;
 
-                headLine.appendChild(h4);
-                headLine.appendChild(stars);
-                top.appendChild(headLine);
+                const catSpan = document.createElement('span');
+                catSpan.className = 'font-bold text-sm text-cocoa-900 truncate';
+                catSpan.textContent = acc.category || '';
 
-                if (rev.text) {
-                    const p = document.createElement('p');
-                    p.className = 'text-xs text-cocoa-600 line-clamp-3';
-                    p.textContent = `"${rev.text}"`;
-                    top.appendChild(p);
-                }
+                titleWrap.appendChild(codeSpan);
+                titleWrap.appendChild(catSpan);
 
-                const actions = document.createElement('div');
-                actions.className = 'flex justify-end gap-2 pt-2 border-t border-cream-200';
+                const stSpan = document.createElement('span');
+                stSpan.className = `px-2.5 py-0.5 rounded-full text-[11px] font-semibold flex-shrink-0 ${isAvailable ? 'bg-sage-100 text-sage-600' : 'bg-rose-100 text-rose-600'}`;
+                stSpan.textContent = isAvailable ? 'ว่าง' : 'ติดเช่า';
+
+                topRow.appendChild(titleWrap);
+                topRow.appendChild(stSpan);
+
+                const rareP = document.createElement('p');
+                rareP.className = 'text-xs text-cocoa-600 truncate';
+                rareP.textContent = acc.rareSkins || '';
+
+                const priceP = document.createElement('p');
+                priceP.className = 'text-xs font-bold text-peach-500';
+                priceP.textContent = acc.price || '';
+
+                const btns = document.createElement('div');
+                btns.className = 'flex flex-wrap gap-1.5 pt-1';
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.type = 'button';
+                toggleBtn.className = 'px-3 py-1 rounded-full bg-white hover:bg-cream-200 text-cocoa-800 text-xs font-medium border border-cream-200';
+                toggleBtn.textContent = isAvailable ? 'ปรับเป็นติดเช่า' : 'ปรับเป็นว่าง';
+                toggleBtn.addEventListener('click', () => quickToggleAccountStatus(acc.id));
 
                 const editBtn = document.createElement('button');
                 editBtn.type = 'button';
-                editBtn.className = 'px-3.5 py-1 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100';
+                editBtn.className = 'px-3 py-1 rounded-full bg-peach-100 hover:bg-peach-200 text-peach-500 text-xs font-medium';
                 editBtn.textContent = 'แก้ไข';
-                editBtn.addEventListener('click', () => openReviewModal(rev.id));
+                editBtn.addEventListener('click', () => openAccountModal(acc.id));
 
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
-                delBtn.className = 'px-3.5 py-1 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100';
+                delBtn.className = 'px-3 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-medium';
                 delBtn.textContent = 'ลบ';
-                delBtn.addEventListener('click', () => deleteReview(rev.id));
+                delBtn.addEventListener('click', () => deleteAccount(acc.id));
 
-                actions.appendChild(editBtn);
-                actions.appendChild(delBtn);
-                card.appendChild(top);
-                card.appendChild(actions);
+                btns.appendChild(toggleBtn);
+                btns.appendChild(editBtn);
+                btns.appendChild(delBtn);
+
+                body.appendChild(topRow);
+                body.appendChild(rareP);
+                body.appendChild(priceP);
+                body.appendChild(btns);
+
+                card.appendChild(img);
+                card.appendChild(body);
                 container.appendChild(card);
             });
+        }
+
+        // --- Categories CRUD (Supabase: categories table) ---
+        async function handleAddCategory(event) {
+            event.preventDefault();
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) return;
+
+            const btn = document.getElementById('btn-add-category');
+            await runWithActionGuard('add-category', btn, async () => {
+                const input = document.getElementById('new-category-name');
+                const name = input.value.trim();
+                if (!name) return;
+                if (storeData.categories.includes(name)) {
+                    showToast('มีประเภทรหัสนี้อยู่แล้ว', 'error');
+                    return;
+                }
+
+                try {
+                    const { error } = await client
+                        .from('categories')
+                        .insert({
+                            name,
+                            sort_order: storeData.categoryRecords.length
+                        });
+                    if (error) throw error;
+
+                    input.value = '';
+                    await loadAllStoreDataFromSupabase();
+                    showToast(`เพิ่มประเภท "${name}" เรียบร้อยแล้ว`);
+                } catch (err) {
+                    console.error('handleAddCategory error:', err);
+                    showToast('เพิ่มประเภทรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                }
+            });
+        }
+
+        function deleteCategory(catName) {
+            if (!appState.isAdminVerified) return;
+            askConfirmation(`ต้องการลบประเภทรหัส "${catName}" ใช่หรือไม่?`, async () => {
+                const client = getSupabaseClient();
+                if (!client) return;
+                try {
+                    const matched = storeData.categoryRecords.find(c => c.name === catName);
+                    if (matched && matched.id) {
+                        const { error } = await client.from('categories').delete().eq('id', matched.id);
+                        if (error) throw error;
+                    } else {
+                        const { error } = await client.from('categories').delete().eq('name', catName);
+                        if (error) throw error;
+                    }
+                    if (currentCategoryFilter === catName) currentCategoryFilter = 'ทั้งหมด';
+                    await loadAllStoreDataFromSupabase();
+                    showToast('ลบประเภทรหัสเรียบร้อยแล้ว');
+                } catch (err) {
+                    console.error('deleteCategory error:', err);
+                    showToast('ลบประเภทรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                }
+            });
+        }
+
+        function renderAdminCategories() {
+            const container = document.getElementById('admin-categories-list');
+            container.replaceChildren();
+            const cats = storeData.categories.filter(c => c !== 'ทั้งหมด');
+            if (cats.length === 0) {
+                renderStatusBox(container, 'empty', 'ยังไม่มีประเภทรหัส', 'เพิ่มหมวดหมู่ด้านบนเพื่อให้ลูกค้าเลือกดูรหัสได้ง่ายขึ้น');
+                return;
+            }
+
+            cats.forEach(cat => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-cream-100 px-4 py-2.5 rounded-2xl border border-cream-200';
+
+                const span = document.createElement('span');
+                span.className = 'text-sm font-medium text-cocoa-900';
+                span.textContent = cat;
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'text-xs text-rose-500 hover:text-rose-700 font-medium px-3 py-1 rounded-full hover:bg-rose-50';
+                delBtn.textContent = 'ลบ';
+                delBtn.addEventListener('click', () => deleteCategory(cat));
+
+                row.appendChild(span);
+                row.appendChild(delBtn);
+                container.appendChild(row);
+            });
+        }
+
+        // --- Reviews CRUD (Supabase: reviews table) ---
+        function openReviewModal(revId = null) {
+            if (!appState.isAdminVerified) return;
+            document.getElementById('rev-id').value = '';
+            document.getElementById('rev-author').value = '';
+            document.getElementById('rev-text').value = '';
+            document.getElementById('rev-img-file').value = '';
+            tempReviewImg = '';
+            document.getElementById('rev-preview-box').classList.add('hidden');
+            renderStarSelector('admin-rev-stars-selector', 'rev-rating', 5);
+
+            if (revId) {
+                const found = storeData.reviews.find(r => r.id === revId);
+                if (found) {
+                    setSafeText(document.getElementById('modal-review-title'), 'แก้ไขรีวิวลูกค้า');
+                    document.getElementById('rev-id').value = found.id;
+                    document.getElementById('rev-author').value = found.author || '';
+                    document.getElementById('rev-text').value = found.text || '';
+                    renderStarSelector('admin-rev-stars-selector', 'rev-rating', found.rating || 5);
+                    if (found.image && isSafeMediaUrlOrData(found.image)) {
+                        tempReviewImg = found.image;
+                        document.getElementById('rev-preview').src = found.image;
+                        document.getElementById('rev-preview-box').classList.remove('hidden');
+                    }
+                }
+            } else {
+                setSafeText(document.getElementById('modal-review-title'), 'เพิ่มรีวิวลูกค้า');
+            }
+            document.getElementById('modal-admin-review').classList.remove('hidden');
+            lucide.createIcons();
         }
 
         function clearAdminReviewImage() {
@@ -5203,194 +5184,162 @@
             document.getElementById('rev-preview-box').classList.add('hidden');
         }
 
-        function openReviewModal(id = null) {
-            document.getElementById('rev-img-file').value = '';
-            if (id) {
-                const rev = storeData.reviews.find(r => r.id === id);
-                if (!rev) return;
-                setSafeText(document.getElementById('modal-review-title'), 'แก้ไขรีวิวลูกค้า');
-                document.getElementById('rev-id').value = rev.id;
-                document.getElementById('rev-author').value = rev.author;
-                document.getElementById('rev-text').value = rev.text || '';
-                renderStarSelector('admin-rev-stars-selector', 'rev-rating', rev.rating || 5);
-                tempReviewImg = rev.image || '';
-            } else {
-                setSafeText(document.getElementById('modal-review-title'), 'เพิ่มรีวิวใหม่');
-                document.getElementById('rev-id').value = '';
-                document.getElementById('rev-author').value = '';
-                document.getElementById('rev-text').value = '';
-                renderStarSelector('admin-rev-stars-selector', 'rev-rating', 5);
-                tempReviewImg = '';
-            }
-
-            if (tempReviewImg) {
-                document.getElementById('rev-preview').src = tempReviewImg;
-                document.getElementById('rev-preview-box').classList.remove('hidden');
-            } else {
-                document.getElementById('rev-preview-box').classList.add('hidden');
-            }
-            document.getElementById('modal-admin-review').classList.remove('hidden');
-            lucide.createIcons();
-        }
-
         async function saveReviewForm(event) {
             event.preventDefault();
             const client = getSupabaseClient();
-            if (!client || !appState.isAdminVerified) {
-                showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
-                return;
-            }
+            if (!client || !appState.isAdminVerified) return;
 
             const btn = document.getElementById('btn-save-review');
             await runWithActionGuard('save-review', btn, async () => {
                 const id = document.getElementById('rev-id').value;
-                const author = document.getElementById('rev-author').value.trim();
-                const text = document.getElementById('rev-text').value.trim();
+                const author = document.getElementById('rev-author').value.trim().slice(0, 80);
+                const text = document.getElementById('rev-text').value.trim().slice(0, 500);
                 const rating = Math.min(5, Math.max(1, parseInt(document.getElementById('rev-rating').value, 10) || 5));
 
                 if (!text && !tempReviewImg) {
-                    showToast('กรุณาเลือกรูปภาพหรือกรอกข้อความรีวิวอย่างน้อยหนึ่งอย่าง', 'error');
+                    showToast('กรุณาใส่ข้อความรีวิวหรือเลือกรูปภาพอย่างน้อย 1 อย่าง', 'error');
                     return;
                 }
 
+                const payload = {
+                    author,
+                    rating,
+                    review_text: text,
+                    image_url: isSafeMediaUrlOrData(tempReviewImg) ? tempReviewImg : ''
+                };
+
                 try {
-                    const finalImg = tempReviewImg
-                        ? await uploadCroppedDataUrlToStorage(tempReviewImg, 'reviews')
-                        : '';
-
-                    const payload = {
-                        author,
-                        rating,
-                        review_text: text,
-                        image_url: finalImg
-                    };
-
                     if (id) {
                         const { error } = await client.from('reviews').update(payload).eq('id', id);
                         if (error) throw error;
+                        showToast('แก้ไขข้อมูลรีวิวเรียบร้อยแล้ว');
                     } else {
                         const { error } = await client.from('reviews').insert(payload);
                         if (error) throw error;
+                        showToast('เพิ่มรีวิวใหม่เรียบร้อยแล้ว');
                     }
 
                     closeModal('modal-admin-review');
                     await loadAllStoreDataFromSupabase();
-                    showToast('บันทึกรีวิวลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveReviewForm error:', err);
-                    showToast('บันทึกรีวิวไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    showToast('บันทึกรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
 
-        function deleteReview(id) {
+        function deleteReview(revId) {
+            if (!appState.isAdminVerified) return;
             askConfirmation('คุณต้องการลบรีวิวนี้ใช่หรือไม่?', async () => {
                 const client = getSupabaseClient();
-                if (!client || !appState.isAdminVerified) return;
-                await runWithActionGuard(`delete-rev-${id}`, null, async () => {
-                    try {
-                        const { error } = await client.from('reviews').delete().eq('id', id);
-                        if (error) throw error;
-                        await loadAllStoreDataFromSupabase();
-                        showToast('ลบรีวิวเรียบร้อยแล้ว');
-                    } catch (err) {
-                        console.error('deleteReview error:', err);
-                        showToast('ลบรีวิวไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
-                    }
-                });
+                if (!client) return;
+                try {
+                    const { error } = await client.from('reviews').delete().eq('id', revId);
+                    if (error) throw error;
+                    await loadAllStoreDataFromSupabase();
+                    showToast('ลบรีวิวเรียบร้อยแล้ว');
+                } catch (err) {
+                    console.error('deleteReview error:', err);
+                    showToast('ลบรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                }
             });
         }
 
-        // --- Contacts CRUD (contacts) ---
-        function renderAdminContacts() {
-            const container = document.getElementById('admin-contacts-list');
-            if (!storeData.contacts || storeData.contacts.length === 0) {
-                renderStatusBox(container, 'empty', 'ไม่มีข้อมูลช่องทางติดต่อ', 'ยังไม่มีช่องทางการติดต่อ');
+        function renderAdminReviews() {
+            const container = document.getElementById('admin-reviews-list');
+            container.replaceChildren();
+            if (storeData.reviews.length === 0) {
+                renderStatusBox(container, 'empty', 'ยังไม่มีข้อมูลรีวิว', 'กด "+ เพิ่มรีวิวใหม่" เพื่อเพิ่มรีวิวจากลูกค้า');
                 return;
             }
 
-            container.replaceChildren();
-            storeData.contacts.forEach(con => {
+            storeData.reviews.forEach(rev => {
                 const card = document.createElement('div');
-                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between gap-3';
+                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex flex-col justify-between space-y-3';
 
                 const top = document.createElement('div');
-                top.className = 'flex items-center gap-3';
+                top.className = 'space-y-2';
 
-                const icon = document.createElement('img');
-                icon.src = con.icon || createSampleSvg('#FFF4EF', '#FFE3D8', 'CONTACT', '', true);
-                icon.className = 'w-12 h-12 rounded-full object-cover border border-cream-200 flex-shrink-0';
+                if (rev.image && isSafeMediaUrlOrData(rev.image)) {
+                    const img = document.createElement('img');
+                    img.src = rev.image;
+                    img.className = 'w-full aspect-square rounded-2xl object-cover border border-cream-200';
+                    top.appendChild(img);
+                }
 
-                const meta = document.createElement('div');
-                meta.className = 'min-w-0';
+                const headRow = document.createElement('div');
+                headRow.className = 'flex items-center justify-between gap-2';
 
-                const h4 = document.createElement('h4');
-                h4.className = 'font-bold text-sm text-cocoa-900 truncate';
-                h4.textContent = con.name || '';
+                const authorP = document.createElement('p');
+                authorP.className = 'text-xs font-bold text-cocoa-900';
+                authorP.textContent = rev.author || '';
 
-                const sub = document.createElement('p');
-                sub.className = 'text-xs text-cocoa-600 truncate';
-                sub.textContent = con.subtitle || '';
+                const starSpan = document.createElement('span');
+                starSpan.className = 'text-xs text-amber-400';
+                renderStarRatingDisplay(starSpan, rev.rating || 5);
 
-                const urlP = document.createElement('p');
-                urlP.className = 'text-[11px] text-peach-500 truncate mt-0.5';
-                urlP.textContent = con.url || '';
+                headRow.appendChild(authorP);
+                headRow.appendChild(starSpan);
+                top.appendChild(headRow);
 
-                meta.appendChild(h4);
-                meta.appendChild(sub);
-                meta.appendChild(urlP);
+                if (rev.text) {
+                    const txtP = document.createElement('p');
+                    txtP.className = 'text-xs text-cocoa-700 line-clamp-2';
+                    txtP.textContent = rev.text;
+                    top.appendChild(txtP);
+                }
 
-                top.appendChild(icon);
-                top.appendChild(meta);
-
-                const actions = document.createElement('div');
-                actions.className = 'flex justify-end gap-2 pt-2 border-t border-cream-200';
+                const btns = document.createElement('div');
+                btns.className = 'flex gap-2 pt-2 border-t border-cream-200';
 
                 const editBtn = document.createElement('button');
                 editBtn.type = 'button';
-                editBtn.className = 'px-3.5 py-1 rounded-full bg-white border border-cream-200 text-xs font-medium text-cocoa-800 hover:bg-cream-100';
+                editBtn.className = 'flex-1 py-1.5 rounded-full bg-white hover:bg-cream-200 text-cocoa-800 text-xs font-medium border border-cream-200';
                 editBtn.textContent = 'แก้ไข';
-                editBtn.addEventListener('click', () => openContactModal(con.id));
+                editBtn.addEventListener('click', () => openReviewModal(rev.id));
 
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
-                delBtn.className = 'px-3.5 py-1 rounded-full bg-rose-50 text-xs font-medium text-rose-600 hover:bg-rose-100';
+                delBtn.className = 'px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-medium';
                 delBtn.textContent = 'ลบ';
-                delBtn.addEventListener('click', () => deleteContact(con.id));
+                delBtn.addEventListener('click', () => deleteReview(rev.id));
 
-                actions.appendChild(editBtn);
-                actions.appendChild(delBtn);
+                btns.appendChild(editBtn);
+                btns.appendChild(delBtn);
+
                 card.appendChild(top);
-                card.appendChild(actions);
+                card.appendChild(btns);
                 container.appendChild(card);
             });
         }
 
-        function openContactModal(id = null) {
+        // --- Contacts CRUD (Supabase: contacts table) ---
+        function openContactModal(conId = null) {
+            if (!appState.isAdminVerified) return;
+            document.getElementById('con-id').value = '';
+            document.getElementById('con-name').value = '';
+            document.getElementById('con-sub').value = '';
+            document.getElementById('con-url').value = '';
             document.getElementById('con-icon-file').value = '';
-            if (id) {
-                const con = storeData.contacts.find(c => c.id === id);
-                if (!con) return;
-                setSafeText(document.getElementById('modal-contact-title'), 'แก้ไขช่องทางการติดต่อ');
-                document.getElementById('con-id').value = con.id;
-                document.getElementById('con-name').value = con.name;
-                document.getElementById('con-sub').value = con.subtitle || '';
-                document.getElementById('con-url').value = con.url;
-                tempContactIcon = con.icon;
+            tempContactIcon = '';
+            document.getElementById('con-preview-box').classList.add('hidden');
+
+            if (conId) {
+                const found = storeData.contacts.find(c => c.id === conId);
+                if (found) {
+                    setSafeText(document.getElementById('modal-contact-title'), 'แก้ไขช่องทางการติดต่อ');
+                    document.getElementById('con-id').value = found.id;
+                    document.getElementById('con-name').value = found.name || '';
+                    document.getElementById('con-sub').value = found.subtitle || '';
+                    document.getElementById('con-url').value = found.url || '';
+                    if (found.icon && isSafeMediaUrlOrData(found.icon)) {
+                        tempContactIcon = found.icon;
+                        document.getElementById('con-preview').src = found.icon;
+                        document.getElementById('con-preview-box').classList.remove('hidden');
+                    }
+                }
             } else {
                 setSafeText(document.getElementById('modal-contact-title'), 'เพิ่มช่องทางการติดต่อ');
-                document.getElementById('con-id').value = '';
-                document.getElementById('con-name').value = '';
-                document.getElementById('con-sub').value = '';
-                document.getElementById('con-url').value = '';
-                tempContactIcon = '';
-            }
-
-            if (tempContactIcon) {
-                document.getElementById('con-preview').src = tempContactIcon;
-                document.getElementById('con-preview-box').classList.remove('hidden');
-            } else {
-                document.getElementById('con-preview-box').classList.add('hidden');
             }
             document.getElementById('modal-admin-contact').classList.remove('hidden');
             lucide.createIcons();
@@ -5399,78 +5348,139 @@
         async function saveContactForm(event) {
             event.preventDefault();
             const client = getSupabaseClient();
-            if (!client || !appState.isAdminVerified) {
-                showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
-                return;
-            }
+            if (!client || !appState.isAdminVerified) return;
 
             const btn = document.getElementById('btn-save-contact');
             await runWithActionGuard('save-contact', btn, async () => {
-                if (!tempContactIcon) {
-                    showToast('กรุณาเลือกรูปไอคอนช่องทางติดต่อ', 'error');
+                const id = document.getElementById('con-id').value;
+                const name = document.getElementById('con-name').value.trim();
+                const subtitle = document.getElementById('con-sub').value.trim();
+                const url = document.getElementById('con-url').value.trim();
+
+                if (!/^https:\/\//i.test(url) && !/^http:\/\//i.test(url)) {
+                    showToast('กรุณากรอกลิงก์ช่องทางติดต่อที่ขึ้นต้นด้วย https:// หรือ http://', 'error');
                     return;
                 }
 
-                const id = document.getElementById('con-id').value;
-                try {
-                    const finalIconUrl = await uploadCroppedDataUrlToStorage(tempContactIcon, 'contacts');
-                    const payload = {
-                        name: document.getElementById('con-name').value.trim(),
-                        subtitle: document.getElementById('con-sub').value.trim(),
-                        url: document.getElementById('con-url').value.trim(),
-                        icon_url: finalIconUrl
-                    };
+                const icon = isSafeMediaUrlOrData(tempContactIcon)
+                    ? tempContactIcon
+                    : createSampleSvg('#FFF4EF', '#FFE3D8', 'CONTACT', '', true);
 
+                const payload = {
+                    name,
+                    subtitle,
+                    url,
+                    icon_url: icon,
+                    sort_order: storeData.contacts.length
+                };
+
+                try {
                     if (id) {
                         const { error } = await client.from('contacts').update(payload).eq('id', id);
                         if (error) throw error;
+                        showToast('แก้ไขช่องทางการติดต่อเรียบร้อยแล้ว');
                     } else {
-                        payload.sort_order = (storeData.contacts || []).length;
                         const { error } = await client.from('contacts').insert(payload);
                         if (error) throw error;
+                        showToast('เพิ่มช่องทางการติดต่อใหม่เรียบร้อยแล้ว');
                     }
 
                     closeModal('modal-admin-contact');
                     await loadAllStoreDataFromSupabase();
-                    showToast('บันทึกช่องทางการติดต่อลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveContactForm error:', err);
-                    showToast('บันทึกช่องทางติดต่อไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
+                    showToast('บันทึกช่องทางติดต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
                 }
             });
         }
 
-        function deleteContact(id) {
+        function deleteContact(conId) {
+            if (!appState.isAdminVerified) return;
             askConfirmation('คุณต้องการลบช่องทางการติดต่อนี้ใช่หรือไม่?', async () => {
                 const client = getSupabaseClient();
-                if (!client || !appState.isAdminVerified) return;
-                await runWithActionGuard(`delete-con-${id}`, null, async () => {
-                    try {
-                        const { error } = await client.from('contacts').delete().eq('id', id);
-                        if (error) throw error;
-                        await loadAllStoreDataFromSupabase();
-                        showToast('ลบช่องทางการติดต่อเรียบร้อยแล้ว');
-                    } catch (err) {
-                        console.error('deleteContact error:', err);
-                        showToast('ลบช่องทางติดต่อไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
-                    }
-                });
+                if (!client) return;
+                try {
+                    const { error } = await client.from('contacts').delete().eq('id', conId);
+                    if (error) throw error;
+                    await loadAllStoreDataFromSupabase();
+                    showToast('ลบช่องทางการติดต่อเรียบร้อยแล้ว');
+                } catch (err) {
+                    console.error('deleteContact error:', err);
+                    showToast('ลบช่องทางติดต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                }
             });
         }
 
-        // ==========================================
-        // 7. URL & SECURITY UTILITIES
-        // ==========================================
+        function renderAdminContacts() {
+            const container = document.getElementById('admin-contacts-list');
+            container.replaceChildren();
+            if (storeData.contacts.length === 0) {
+                renderStatusBox(container, 'empty', 'ยังไม่มีช่องทางการติดต่อ', 'กด "+ เพิ่มช่องทางติดต่อ" เพื่อเพิ่มปุ่มติดต่อร้าน');
+                return;
+            }
+
+            storeData.contacts.forEach(con => {
+                const card = document.createElement('div');
+                card.className = 'bg-cream-100 rounded-2xl p-4 border border-cream-200 flex items-center justify-between gap-3';
+
+                const left = document.createElement('div');
+                left.className = 'flex items-center gap-3 min-w-0';
+
+                const img = document.createElement('img');
+                img.src = (con.icon && isSafeMediaUrlOrData(con.icon))
+                    ? con.icon
+                    : createSampleSvg('#FFF4EF', '#FFE3D8', 'CONTACT', '', true);
+                img.className = 'w-11 h-11 rounded-full object-cover border border-cream-200 flex-shrink-0';
+
+                const info = document.createElement('div');
+                info.className = 'min-w-0';
+
+                const nameP = document.createElement('p');
+                nameP.className = 'text-sm font-bold text-cocoa-900 truncate';
+                nameP.textContent = con.name || '';
+
+                const urlP = document.createElement('p');
+                urlP.className = 'text-xs text-cocoa-600 truncate';
+                urlP.textContent = con.url || '';
+
+                info.appendChild(nameP);
+                info.appendChild(urlP);
+                left.appendChild(img);
+                left.appendChild(info);
+
+                const btns = document.createElement('div');
+                btns.className = 'flex gap-1.5 flex-shrink-0';
+
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'px-3 py-1 rounded-full bg-white hover:bg-cream-200 text-cocoa-800 text-xs font-medium border border-cream-200';
+                editBtn.textContent = 'แก้ไข';
+                editBtn.addEventListener('click', () => openContactModal(con.id));
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'px-3 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-medium';
+                delBtn.textContent = 'ลบ';
+                delBtn.addEventListener('click', () => deleteContact(con.id));
+
+                btns.appendChild(editBtn);
+                btns.appendChild(delBtn);
+
+                card.appendChild(left);
+                card.appendChild(btns);
+                container.appendChild(card);
+            });
+        }
+
         function sanitizeUrl(url) {
-            if (!url) return '#';
-            const trimmed = String(url).trim();
-            if (/^https?:\/\//i.test(trimmed)) return trimmed;
-            if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(trimmed)) return 'https://' + trimmed;
+            if (!url || typeof url !== 'string') return '#';
+            const trimmed = url.trim();
+            if (/^https:\/\//i.test(trimmed) || /^http:\/\//i.test(trimmed)) return trimmed;
             return '#';
         }
 
         // ==========================================
-        // INITIALIZE APP ON LOAD
+        // 7. INITIALIZATION
         // ==========================================
         document.addEventListener('DOMContentLoaded', async () => {
             initManualCropperInteractions();
@@ -5478,22 +5488,22 @@
             initAutoplayAndLifecycleMusic();
 
             const client = getSupabaseClient();
-            if (client?.auth) {
-                client.auth.onAuthStateChange(async (event, session) => {
-                    appState.currentUser = session?.user || null;
-                    if (!session?.user) {
+            if (client && client.auth && typeof client.auth.onAuthStateChange === 'function') {
+                client.auth.onAuthStateChange(async (event) => {
+                    if (event === 'SIGNED_OUT') {
+                        appState.currentUser = null;
                         appState.isAdminVerified = false;
-                        appState.adminDeniedReason = '';
                         updateAdminAuthView();
                     } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                        await verifyAdminSessionAndRole();
+                        const isAdmin = await verifyAdminSessionAndRole();
+                        if (isAdmin) {
+                            await loadAllStoreDataFromSupabase();
+                        }
                     }
                 });
             }
 
-            await verifyAdminSessionAndRole();
             await loadAllStoreDataFromSupabase();
-            lucide.createIcons();
         });
     </script>
 </body>
