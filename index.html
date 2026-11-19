@@ -1292,16 +1292,26 @@
         // 0. SUPABASE CLIENT & STATE CONFIGURATION
         // ==========================================
         const SUPABASE_URL = 'https://arxwoizkidavdfimhxxq.supabase.co';
-        // นำ Publishable key (หรือ anon key) จริงจากหน้า Supabase Dashboard > Project Settings > API Keys มาวางแทนข้อความข้างล่างนี้
-        const SUPABASE_PUBLISHABLE_KEY = 'วาง_PUBLISHABLE_KEY_จริงของโปรเจกต์_arxwoizkidavdfimhxxq_ที่นี่';
+        const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeHdvaXpraWRhdmRmaW1oeHhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNjI5OTcsImV4cCI6MjExMDYzODk5N30.I5EQwrHxrV0X_MILMvosZ2xel_2XOUdSjax3ZGDqfVY';
 
         let supabaseClient = null;
-        try {
-            if (window.supabase && typeof window.supabase.createClient === 'function') {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        function getSupabaseClient() {
+            if (supabaseClient && supabaseClient.auth && typeof supabaseClient.auth.signInWithPassword === 'function') {
+                return supabaseClient;
             }
-        } catch (err) {
-            console.error('Supabase initialization error:', err);
+            if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes('วาง_PUBLISHABLE_KEY_จริง')) {
+                return null;
+            }
+            try {
+                if (window.supabase && typeof window.supabase.createClient === 'function') {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+                    return (supabaseClient && supabaseClient.auth) ? supabaseClient : null;
+                }
+            } catch (err) {
+                console.error('Supabase initialization error:', err);
+            }
+            return null;
         }
 
         // Application Loading & Error State
@@ -1349,8 +1359,6 @@
             const box = document.createElement('div');
             if (variant === 'error') {
                 box.className = 'col-span-full bg-rose-50/90 border border-rose-200 rounded-3xl p-8 text-center space-y-3';
-            } else if (variant === 'loading') {
-                box.className = 'col-span-full bg-white rounded-3xl p-8 text-center border border-cream-200 space-y-2';
             } else {
                 box.className = 'col-span-full bg-white rounded-3xl p-8 text-center border border-cream-200 space-y-2';
             }
@@ -2023,6 +2031,7 @@
             customBlocks: [],
             highlights: [],
             categories: ['ทั้งหมด'],
+            categoryRecords: [],
             accounts: [],
             reviews: [],
             contacts: []
@@ -2122,8 +2131,9 @@
         }
 
         async function saveStoreSettingsToSupabase() {
-            if (!supabaseClient) {
-                showToast('ไม่พบการเชื่อมต่อ Supabase', 'error');
+            const client = getSupabaseClient();
+            if (!client) {
+                showToast('กรุณาตั้งค่า Project URL และ Publishable Key ของ Supabase ให้ถูกต้อง', 'error');
                 return false;
             }
             if (!appState.isAdminVerified) {
@@ -2132,22 +2142,23 @@
             }
             try {
                 const payload = buildStoreSettingsPayload();
-                const { error } = await supabaseClient
+                const { error } = await client
                     .from('store_settings')
                     .upsert(payload, { onConflict: 'id' });
                 if (error) throw error;
                 return true;
             } catch (err) {
                 console.error('saveStoreSettingsToSupabase error:', err);
-                showToast('เกิดข้อผิดพลาดในการบันทึกการตั้งค่าร้าน: ' + (err.message || ''), 'error');
+                showToast('เกิดข้อผิดพลาดในการบันทึกการตั้งค่าร้าน: ' + (err && err.message ? err.message : ''), 'error');
                 return false;
             }
         }
 
         async function loadAllStoreDataFromSupabase() {
-            if (!supabaseClient) {
+            const client = getSupabaseClient();
+            if (!client) {
                 appState.isLoadingStore = false;
-                appState.storeError = 'ไม่สามารถเชื่อมต่อระบบฐานข้อมูล Supabase ได้';
+                appState.storeError = 'กรุณาใส่ Publishable Key จริงของโปรเจกต์ Supabase ในไฟล์ index.html';
                 renderAllStorefrontViews();
                 return;
             }
@@ -2166,13 +2177,13 @@
                     reviewsRes,
                     contactsRes
                 ] = await Promise.all([
-                    supabaseClient.from('store_settings').select('*').eq('id', 1).maybeSingle(),
-                    supabaseClient.from('custom_blocks').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-                    supabaseClient.from('highlights').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-                    supabaseClient.from('categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-                    supabaseClient.from('accounts').select('*').order('created_at', { ascending: false }),
-                    supabaseClient.from('reviews').select('*').order('created_at', { ascending: false }),
-                    supabaseClient.from('contacts').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
+                    client.from('store_settings').select('*').eq('id', 1).maybeSingle(),
+                    client.from('custom_blocks').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+                    client.from('highlights').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+                    client.from('categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+                    client.from('accounts').select('*').order('created_at', { ascending: false }),
+                    client.from('reviews').select('*').order('created_at', { ascending: false }),
+                    client.from('contacts').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
                 ]);
 
                 if (settingsRes.error) throw settingsRes.error;
@@ -2256,7 +2267,7 @@
             } catch (err) {
                 console.error('Failed loading data from Supabase:', err);
                 appState.isLoadingStore = false;
-                appState.storeError = 'เกิดข้อผิดพลาดในการโหลดข้อมูลจากฐานข้อมูล: ' + (err.message || '');
+                appState.storeError = 'เกิดข้อผิดพลาดในการโหลดข้อมูลจากฐานข้อมูล: ' + (err && err.message ? err.message : '');
             }
 
             renderAllStorefrontViews();
@@ -2316,10 +2327,12 @@
         // 3. SUPABASE AUTH & ADMIN VERIFICATION (SESSION + is_admin)
         // ==========================================
         async function verifyAdminSessionAndRole() {
-            if (!supabaseClient) {
+            const client = getSupabaseClient();
+            if (!client || !client.auth) {
                 appState.currentUser = null;
                 appState.isAdminVerified = false;
-                appState.adminDeniedReason = 'ไม่พบการเชื่อมต่อ Supabase';
+                appState.adminDeniedReason = 'ไม่พบการเชื่อมต่อ Supabase Auth';
+                updateAdminAuthView();
                 return false;
             }
 
@@ -2327,7 +2340,7 @@
             updateAdminAuthView();
 
             try {
-                const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+                const { data: sessionData, error: sessionError } = await client.auth.getSession();
                 if (sessionError) throw sessionError;
 
                 const session = sessionData?.session || null;
@@ -2341,7 +2354,7 @@
                     return false;
                 }
 
-                const { data: isAdminResult, error: rpcError } = await supabaseClient.rpc('is_admin');
+                const { data: isAdminResult, error: rpcError } = await client.rpc('is_admin');
                 if (rpcError) throw rpcError;
 
                 appState.isAdminVerified = isAdminResult === true;
@@ -2351,7 +2364,7 @@
             } catch (err) {
                 console.error('verifyAdminSessionAndRole error:', err);
                 appState.isAdminVerified = false;
-                appState.adminDeniedReason = 'ตรวจสอบสิทธิ์แอดมินไม่สำเร็จ: ' + (err.message || '');
+                appState.adminDeniedReason = 'ตรวจสอบสิทธิ์แอดมินไม่สำเร็จ: ' + (err && err.message ? err.message : '');
             } finally {
                 appState.isCheckingAdmin = false;
             }
@@ -2395,8 +2408,9 @@
 
         async function handleAdminLogin(event) {
             event.preventDefault();
-            if (!supabaseClient) {
-                showToast('ไม่พบการเชื่อมต่อ Supabase', 'error');
+            const client = getSupabaseClient();
+            if (!client || !client.auth) {
+                showToast('กรุณาใส่ Publishable Key จริงของโปรเจกต์ Supabase ก่อนเข้าสู่ระบบ', 'error');
                 return;
             }
 
@@ -2411,7 +2425,7 @@
                 }
 
                 try {
-                    const { error } = await supabaseClient.auth.signInWithPassword({
+                    const { error } = await client.auth.signInWithPassword({
                         email: emailInput,
                         password: passwordInput
                     });
@@ -2428,7 +2442,8 @@
                     }
                 } catch (err) {
                     console.error('Admin login error:', err);
-                    showToast('เข้าสู่ระบบไม่สำเร็จ: ' + (err.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'), 'error');
+                    const detail = (err && err.message) ? err.message : 'เกิดข้อผิดพลาดในการเรียกใช้ระบบเข้าสู่ระบบ';
+                    showToast('เข้าสู่ระบบไม่สำเร็จ: ' + detail, 'error');
                 }
             });
         }
@@ -2437,8 +2452,9 @@
             const btn = document.querySelector('#admin-dashboard-content button[onclick="handleAdminLogout()"]');
             await runWithActionGuard('admin-logout', btn, async () => {
                 try {
-                    if (supabaseClient) {
-                        await supabaseClient.auth.signOut();
+                    const client = getSupabaseClient();
+                    if (client && client.auth) {
+                        await client.auth.signOut();
                     }
                 } catch (err) {
                     console.error('Logout error:', err);
@@ -2453,7 +2469,8 @@
 
         async function saveAdminCredentials(event) {
             event.preventDefault();
-            if (!supabaseClient || !appState.isAdminVerified) {
+            const client = getSupabaseClient();
+            if (!client || !client.auth || !appState.isAdminVerified) {
                 showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
                 return;
             }
@@ -2473,14 +2490,14 @@
                     if (appState.currentUser && newEmail !== appState.currentUser.email) {
                         updatePayload.email = newEmail;
                     }
-                    const { data, error } = await supabaseClient.auth.updateUser(updatePayload);
+                    const { data, error } = await client.auth.updateUser(updatePayload);
                     if (error) throw error;
                     if (data?.user) appState.currentUser = data.user;
                     document.getElementById('input-admin-password').value = '';
                     showToast('อัปเดตข้อมูลบัญชีแอดมินใน Supabase Auth เรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveAdminCredentials error:', err);
-                    showToast('อัปเดตข้อมูลล็อกอินไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('อัปเดตข้อมูลล็อกอินไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
@@ -3086,9 +3103,7 @@
 
             if (showImage) {
                 const imgWrap = document.createElement('div');
-                imgWrap.className = showText
-                    ? 'w-full aspect-square rounded-2xl overflow-hidden border border-cream-200 bg-cream-100 flex-shrink-0'
-                    : 'w-full aspect-square rounded-2xl overflow-hidden border border-cream-200 bg-cream-100';
+                imgWrap.className = 'w-full aspect-square rounded-2xl overflow-hidden border border-cream-200 bg-cream-100 flex-shrink-0';
 
                 const img = document.createElement('img');
                 img.src = image;
@@ -3703,8 +3718,9 @@
 
         async function submitCustomerReviewForm(event) {
             event.preventDefault();
-            if (!supabaseClient) {
-                showToast('ไม่พบการเชื่อมต่อ Supabase', 'error');
+            const client = getSupabaseClient();
+            if (!client) {
+                showToast('กรุณาใส่ Publishable Key จริงของโปรเจกต์ Supabase', 'error');
                 return;
             }
 
@@ -3724,7 +3740,7 @@
                 }
 
                 try {
-                    const { error } = await supabaseClient
+                    const { error } = await client
                         .from('reviews')
                         .insert({
                             author,
@@ -3739,7 +3755,7 @@
                     showToast(`ส่งรีวิว ${rating} ดาวของคุณเรียบร้อยแล้ว ขอบคุณมากครับ`);
                 } catch (err) {
                     console.error('submitCustomerReviewForm error:', err);
-                    showToast('ส่งรีวิวไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('ส่งรีวิวไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
@@ -4235,7 +4251,8 @@
 
         async function saveCustomBlockForm(event) {
             event.preventDefault();
-            if (!supabaseClient || !appState.isAdminVerified) {
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) {
                 showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
                 return;
             }
@@ -4267,11 +4284,11 @@
                     };
 
                     if (id) {
-                        const { error } = await supabaseClient.from('custom_blocks').update(payload).eq('id', id);
+                        const { error } = await client.from('custom_blocks').update(payload).eq('id', id);
                         if (error) throw error;
                     } else {
                         payload.sort_order = (storeData.customBlocks || []).length;
-                        const { error } = await supabaseClient.from('custom_blocks').insert(payload);
+                        const { error } = await client.from('custom_blocks').insert(payload);
                         if (error) throw error;
                     }
 
@@ -4280,23 +4297,24 @@
                     showToast('บันทึกบล็อคแสดงผลลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveCustomBlockForm error:', err);
-                    showToast('บันทึกบล็อคไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('บันทึกบล็อคไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
 
         function deleteCustomBlock(id) {
             askConfirmation('คุณต้องการลบบล็อคแสดงผลนี้ใช่หรือไม่?', async () => {
-                if (!supabaseClient || !appState.isAdminVerified) return;
+                const client = getSupabaseClient();
+                if (!client || !appState.isAdminVerified) return;
                 await runWithActionGuard(`delete-cb-${id}`, null, async () => {
                     try {
-                        const { error } = await supabaseClient.from('custom_blocks').delete().eq('id', id);
+                        const { error } = await client.from('custom_blocks').delete().eq('id', id);
                         if (error) throw error;
                         await loadAllStoreDataFromSupabase();
                         showToast('ลบบล็อคแสดงผลเรียบร้อยแล้ว');
                     } catch (err) {
                         console.error('deleteCustomBlock error:', err);
-                        showToast('ลบบล็อคไม่สำเร็จ: ' + (err.message || ''), 'error');
+                        showToast('ลบบล็อคไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                     }
                 });
             });
@@ -4432,7 +4450,8 @@
 
         async function saveHighlightForm(event) {
             event.preventDefault();
-            if (!supabaseClient || !appState.isAdminVerified) {
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) {
                 showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
                 return;
             }
@@ -4458,11 +4477,11 @@
                     };
 
                     if (id) {
-                        const { error } = await supabaseClient.from('highlights').update(payload).eq('id', id);
+                        const { error } = await client.from('highlights').update(payload).eq('id', id);
                         if (error) throw error;
                     } else {
                         payload.sort_order = (storeData.highlights || []).length;
-                        const { error } = await supabaseClient.from('highlights').insert(payload);
+                        const { error } = await client.from('highlights').insert(payload);
                         if (error) throw error;
                     }
 
@@ -4471,23 +4490,24 @@
                     showToast('บันทึกไฮไลท์ลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveHighlightForm error:', err);
-                    showToast('บันทึกไฮไลท์ไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('บันทึกไฮไลท์ไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
 
         function deleteHighlight(id) {
             askConfirmation('คุณต้องการลบไฮไลท์นี้ใช่หรือไม่?', async () => {
-                if (!supabaseClient || !appState.isAdminVerified) return;
+                const client = getSupabaseClient();
+                if (!client || !appState.isAdminVerified) return;
                 await runWithActionGuard(`delete-hl-${id}`, null, async () => {
                     try {
-                        const { error } = await supabaseClient.from('highlights').delete().eq('id', id);
+                        const { error } = await client.from('highlights').delete().eq('id', id);
                         if (error) throw error;
                         await loadAllStoreDataFromSupabase();
                         showToast('ลบไฮไลท์เรียบร้อยแล้ว');
                     } catch (err) {
                         console.error('deleteHighlight error:', err);
-                        showToast('ลบไฮไลท์ไม่สำเร็จ: ' + (err.message || ''), 'error');
+                        showToast('ลบไฮไลท์ไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                     }
                 });
             });
@@ -4640,7 +4660,8 @@
 
         async function handleAddCategory(event) {
             event.preventDefault();
-            if (!supabaseClient || !appState.isAdminVerified) {
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) {
                 showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
                 return;
             }
@@ -4657,7 +4678,7 @@
                 }
 
                 try {
-                    const { error } = await supabaseClient.from('categories').insert({
+                    const { error } = await client.from('categories').insert({
                         name,
                         sort_order: getEditableCategories().length
                     });
@@ -4668,7 +4689,7 @@
                     showToast('เพิ่มประเภทรหัสลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('handleAddCategory error:', err);
-                    showToast('เพิ่มประเภทรหัสไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('เพิ่มประเภทรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
@@ -4679,10 +4700,11 @@
             if (!targetCatName) return;
 
             askConfirmation(`ต้องการลบประเภท "${targetCatName}" ใช่หรือไม่?`, async () => {
-                if (!supabaseClient || !appState.isAdminVerified) return;
+                const client = getSupabaseClient();
+                if (!client || !appState.isAdminVerified) return;
                 await runWithActionGuard(`delete-cat-${targetCatName}`, null, async () => {
                     try {
-                        const { error } = await supabaseClient.from('categories').delete().eq('name', targetCatName);
+                        const { error } = await client.from('categories').delete().eq('name', targetCatName);
                         if (error) throw error;
 
                         if (currentCategoryFilter === targetCatName) {
@@ -4692,7 +4714,7 @@
                         showToast('ลบประเภทรหัสเรียบร้อยแล้ว');
                     } catch (err) {
                         console.error('deleteCategoryByIndex error:', err);
-                        showToast('ลบประเภทรหัสไม่สำเร็จ: ' + (err.message || ''), 'error');
+                        showToast('ลบประเภทรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                     }
                 });
             });
@@ -4804,14 +4826,15 @@
         }
 
         async function toggleAccountStatus(id) {
-            if (!supabaseClient || !appState.isAdminVerified) return;
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) return;
             const acc = storeData.accounts.find(a => a.id === id);
             if (!acc) return;
 
             await runWithActionGuard(`toggle-acc-${id}`, null, async () => {
                 const nextStatus = acc.status === 'available' ? 'rented' : 'available';
                 try {
-                    const { error } = await supabaseClient
+                    const { error } = await client
                         .from('accounts')
                         .update({ status: nextStatus })
                         .eq('id', id);
@@ -4821,7 +4844,7 @@
                     showToast(`เปลี่ยนสถานะรหัส ${acc.code || ''} เป็น "${nextStatus === 'available' ? 'ว่าง' : 'ติดเช่า'}" แล้ว`);
                 } catch (err) {
                     console.error('toggleAccountStatus error:', err);
-                    showToast('เปลี่ยนสถานะรหัสไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('เปลี่ยนสถานะรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
@@ -4921,7 +4944,8 @@
 
         async function saveAccountForm(event) {
             event.preventDefault();
-            if (!supabaseClient || !appState.isAdminVerified) {
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) {
                 showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
                 return;
             }
@@ -4961,10 +4985,10 @@
 
                 try {
                     if (id) {
-                        const { error } = await supabaseClient.from('accounts').update(payload).eq('id', id);
+                        const { error } = await client.from('accounts').update(payload).eq('id', id);
                         if (error) throw error;
                     } else {
-                        const { error } = await supabaseClient.from('accounts').insert(payload);
+                        const { error } = await client.from('accounts').insert(payload);
                         if (error) throw error;
                     }
 
@@ -4973,23 +4997,24 @@
                     showToast(`บันทึกข้อมูลรหัส ${codeVal} ลงฐานข้อมูลเรียบร้อยแล้ว`);
                 } catch (err) {
                     console.error('saveAccountForm error:', err);
-                    showToast('บันทึกข้อมูลรหัสไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('บันทึกข้อมูลรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
 
         function deleteAccount(id) {
             askConfirmation('คุณต้องการลบรหัสนี้ใช่หรือไม่?', async () => {
-                if (!supabaseClient || !appState.isAdminVerified) return;
+                const client = getSupabaseClient();
+                if (!client || !appState.isAdminVerified) return;
                 await runWithActionGuard(`delete-acc-${id}`, null, async () => {
                     try {
-                        const { error } = await supabaseClient.from('accounts').delete().eq('id', id);
+                        const { error } = await client.from('accounts').delete().eq('id', id);
                         if (error) throw error;
                         await loadAllStoreDataFromSupabase();
                         showToast('ลบรหัสเรียบร้อยแล้ว');
                     } catch (err) {
                         console.error('deleteAccount error:', err);
-                        showToast('ลบรหัสไม่สำเร็จ: ' + (err.message || ''), 'error');
+                        showToast('ลบรหัสไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                     }
                 });
             });
@@ -5101,7 +5126,8 @@
 
         async function saveReviewForm(event) {
             event.preventDefault();
-            if (!supabaseClient || !appState.isAdminVerified) {
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) {
                 showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
                 return;
             }
@@ -5127,10 +5153,10 @@
                     };
 
                     if (id) {
-                        const { error } = await supabaseClient.from('reviews').update(payload).eq('id', id);
+                        const { error } = await client.from('reviews').update(payload).eq('id', id);
                         if (error) throw error;
                     } else {
-                        const { error } = await supabaseClient.from('reviews').insert(payload);
+                        const { error } = await client.from('reviews').insert(payload);
                         if (error) throw error;
                     }
 
@@ -5139,23 +5165,24 @@
                     showToast('บันทึกรีวิวลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveReviewForm error:', err);
-                    showToast('บันทึกรีวิวไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('บันทึกรีวิวไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
 
         function deleteReview(id) {
             askConfirmation('คุณต้องการลบรีวิวนี้ใช่หรือไม่?', async () => {
-                if (!supabaseClient || !appState.isAdminVerified) return;
+                const client = getSupabaseClient();
+                if (!client || !appState.isAdminVerified) return;
                 await runWithActionGuard(`delete-rev-${id}`, null, async () => {
                     try {
-                        const { error } = await supabaseClient.from('reviews').delete().eq('id', id);
+                        const { error } = await client.from('reviews').delete().eq('id', id);
                         if (error) throw error;
                         await loadAllStoreDataFromSupabase();
                         showToast('ลบรีวิวเรียบร้อยแล้ว');
                     } catch (err) {
                         console.error('deleteReview error:', err);
-                        showToast('ลบรีวิวไม่สำเร็จ: ' + (err.message || ''), 'error');
+                        showToast('ลบรีวิวไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                     }
                 });
             });
@@ -5258,7 +5285,8 @@
 
         async function saveContactForm(event) {
             event.preventDefault();
-            if (!supabaseClient || !appState.isAdminVerified) {
+            const client = getSupabaseClient();
+            if (!client || !appState.isAdminVerified) {
                 showToast('กรุณาเข้าสู่ระบบแอดมินก่อน', 'error');
                 return;
             }
@@ -5280,11 +5308,11 @@
 
                 try {
                     if (id) {
-                        const { error } = await supabaseClient.from('contacts').update(payload).eq('id', id);
+                        const { error } = await client.from('contacts').update(payload).eq('id', id);
                         if (error) throw error;
                     } else {
                         payload.sort_order = (storeData.contacts || []).length;
-                        const { error } = await supabaseClient.from('contacts').insert(payload);
+                        const { error } = await client.from('contacts').insert(payload);
                         if (error) throw error;
                     }
 
@@ -5293,23 +5321,24 @@
                     showToast('บันทึกช่องทางการติดต่อลงฐานข้อมูลเรียบร้อยแล้ว');
                 } catch (err) {
                     console.error('saveContactForm error:', err);
-                    showToast('บันทึกช่องทางติดต่อไม่สำเร็จ: ' + (err.message || ''), 'error');
+                    showToast('บันทึกช่องทางติดต่อไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                 }
             });
         }
 
         function deleteContact(id) {
             askConfirmation('คุณต้องการลบช่องทางการติดต่อนี้ใช่หรือไม่?', async () => {
-                if (!supabaseClient || !appState.isAdminVerified) return;
+                const client = getSupabaseClient();
+                if (!client || !appState.isAdminVerified) return;
                 await runWithActionGuard(`delete-con-${id}`, null, async () => {
                     try {
-                        const { error } = await supabaseClient.from('contacts').delete().eq('id', id);
+                        const { error } = await client.from('contacts').delete().eq('id', id);
                         if (error) throw error;
                         await loadAllStoreDataFromSupabase();
                         showToast('ลบช่องทางการติดต่อเรียบร้อยแล้ว');
                     } catch (err) {
                         console.error('deleteContact error:', err);
-                        showToast('ลบช่องทางติดต่อไม่สำเร็จ: ' + (err.message || ''), 'error');
+                        showToast('ลบช่องทางติดต่อไม่สำเร็จ: ' + (err && err.message ? err.message : ''), 'error');
                     }
                 });
             });
@@ -5334,8 +5363,9 @@
             renderAllStorefrontViews();
             initAutoplayAndLifecycleMusic();
 
-            if (supabaseClient?.auth) {
-                supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            const client = getSupabaseClient();
+            if (client?.auth) {
+                client.auth.onAuthStateChange(async (event, session) => {
                     appState.currentUser = session?.user || null;
                     if (!session?.user) {
                         appState.isAdminVerified = false;
